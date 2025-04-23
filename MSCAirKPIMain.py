@@ -2,6 +2,7 @@ import psycopg2
 from flask import Flask, render_template, request, redirect, g
 import webbrowser
 from threading import Timer
+import os
 
 app = Flask(__name__)
 
@@ -483,10 +484,12 @@ def success():
     return render_template('success.html')
 
 if __name__ == '__main__':
-    # Funzione per aprire il browser predefinito
+    # Funzione per aprire il browser predefinito (opzionale per Render)
     def open_browser():
         webbrowser.open_new("http://127.0.0.1:5000/")
 
-    # Avvia il server Flask e apri il browser
-    Timer(1, open_browser).start()
-    app.run(debug=False)
+    # Ottieni la porta dalla variabile di ambiente (default: 5000)
+    port = int(os.environ.get("PORT", 5000))
+
+    # Avvia il server Flask
+    app.run(host="0.0.0.0", port=port, debug=False)
