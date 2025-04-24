@@ -6,24 +6,56 @@
     <title>MSCAir Safety KPI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1a202c; /* Blu scuro */
+            color: #ffffff; /* Testo bianco */
+            font-family: 'Roboto', sans-serif;
+        }
+        header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #2d3748; /* Grigio scuro */
+            color: #ffffff;
+            font-weight: bold;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #4a5568; /* Grigio medio */
+            transform: scale(1.05);
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #a0aec0; /* Grigio chiaro */
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-screen flex justify-center items-center">
+<body class="h-screen flex flex-col justify-center items-center">
     <header>
         MSCAir Safety KPI
     </header>
-    <main class="text-center text-white max-w-4xl mx-auto p-8">
-        <h1 class="text-4xl md:text-5xl font-extrabold mb-6">MSC Air - Safety Performance Indicator</h1>
-        <p class="text-xl mb-8">Welcome to MSC Air KPI Performance Indicator App. Select your department to start insert data.</p>
+    <main class="text-center max-w-4xl mx-auto p-8">
+        <h1 class="text-3xl md:text-4xl font-bold mb-6">MSC Air - Safety Performance Indicator</h1>
+        <p class="text-lg mb-8">Welcome to MSC Air KPI Performance Indicator App. Select your department to start inserting data.</p>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
-            <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/1'">OCC</button>
-            <button class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/2'">COMPLIANCE</button>
-            <button class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/3'">SAFETY</button>
-            <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/4'">CAMO</button>
-            <button class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/7'">FLIGHT OPS</button>
-            <button class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/5'">GROUND OPS</button>
-            <button class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/6'">CREW TNG</button>
-            <button class="bg-green-700 hover:bg-green-800 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105" onclick="window.location.href='/module/8'">CARGO</button>
-            <button class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition duration-300 transform hover:scale-105 col-span-2 md:col-span-3" onclick="window.location.href='/reporting'">REPORTING</button>
+            <button onclick="window.location.href='/module/1'">OCC</button>
+            <button onclick="window.location.href='/module/2'">COMPLIANCE</button>
+            <button onclick="window.location.href='/module/3'">SAFETY</button>
+            <button onclick="window.location.href='/module/4'">CAMO</button>
+            <button onclick="window.location.href='/module/7'">FLIGHT OPS</button>
+            <button onclick="window.location.href='/module/5'">GROUND OPS</button>
+            <button onclick="window.location.href='/module/6'">CREW TNG</button>
+            <button onclick="window.location.href='/module/8'">CARGO</button>
+            <button class="col-span-2 md:col-span-3" onclick="window.location.href='/reporting'">REPORTING</button>
         </div>
     </main>
     <footer>
