@@ -2,99 +2,178 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>KPI Table</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCC Module</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200 min-h-screen flex flex-col font-sans text-gray-800">
+<body class="bg-gradient-to-br from-[#e3f0fa] via-[#fafdff] to-[#e3f0fa] min-h-screen flex flex-col font-sans text-black">
     <main class="flex-grow p-8">
-        <form action="/module/1" method="POST" class="mb-8 bg-white p-6 rounded shadow-md">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">OCC - Flight Data</h2>
-
-            <!-- Flight Cycle -->
-            <label for="flight_cycle" class="block mb-2 font-bold text-gray-800">Flight Cycle:</label>
-            <input type="number" id="flight_cycle" name="flight_cycle" class="w-full p-2 border border-gray-300 rounded mb-4" min="0" required>
-
-            <!-- Flight Hours -->
-            <label for="flight_hours" class="block mb-2 font-bold text-gray-800">Flight Hours:</label>
-            <input type="number" id="flight_hours" name="flight_hours" class="w-full p-2 border border-gray-300 rounded mb-4" min="0" required>
-
-            <!-- Flight Minutes -->
-            <label for="flight_minutes" class="block mb-2 font-bold text-gray-800">Flight Minutes:</label>
-            <input type="number" id="flight_minutes" name="flight_minutes" class="w-full p-2 border border-gray-300 rounded mb-4" min="0" max="59" required>
-
-            <!-- Reference Year -->
-            <label for="reference_year" class="block mb-2 font-bold text-gray-800">Reference Year:</label>
-            <select id="reference_year" name="reference_year" class="w-full p-2 border border-gray-300 rounded mb-4" required>
-                {% for year in range(2024, 2035) %}
-                <option value="{{ year }}">{{ year }}</option>
-                {% endfor %}
-            </select>
-
-            <!-- Reference Month -->
-            <label for="reference_month" class="block mb-2 font-bold text-gray-800">Reference Month:</label>
-            <select id="reference_month" name="reference_month" class="w-full p-2 border border-gray-300 rounded mb-4" required>
-                <option value="Jan">Jan</option>
-                <option value="Feb">Feb</option>
-                <option value="Mar">Mar</option>
-                <option value="Apr">Apr</option>
-                <option value="May">May</option>
-                <option value="Jun">Jun</option>
-                <option value="Jul">Jul</option>
-                <option value="Aug">Aug</option>
-                <option value="Sep">Sep</option>
-                <option value="Oct">Oct</option>
-                <option value="Nov">Nov</option>
-                <option value="Dec">Dec</option>
-            </select>
-
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit</button>
-        </form>
-
-        <!-- Button to go back to the home page -->
-        <div class="text-center mb-8">
-            <a href="/landing" class="inline-flex items-center bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-2 2v7a2 2 0 01-2 2h-4a2 2 0 01-2-2v-7m-2 2l-2 2m0-2l-2-2" />
-                </svg>
-                Home
-            </a>
-        </div>
-
-        <!-- Table for displaying existing data -->
         <div class="table-container">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">Existing Flight Data</h2>
-            <table class="table w-full border-collapse border border-gray-300">
-                <thead>
-                    <tr class="bg-blue-500 text-white">
-                        <th class="border border-gray-300 p-2">Flight Cycle</th>
-                        <th class="border border-gray-300 p-2">Flight Hours</th>
-                        <th class="border border-gray-300 p-2">Flight Minutes</th>
-                        <th class="border border-gray-300 p-2">Reference Month</th>
-                        <th class="border border-gray-300 p-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in flight_data %}
-                    <tr class="bg-white text-center">
-                        <td class="border border-gray-300 p-2">{{ row[1] }}</td>
-                        <td class="border border-gray-300 p-2">{{ row[2] }}</td>
-                        <td class="border border-gray-300 p-2">{{ row[3] }}</td>
-                        <td class="border border-gray-300 p-2">{{ row[4] }}</td> <!-- Mostra YYYY-MM -->
-                        <td class="border border-gray-300 p-2">
-                            <a href="/module/1/edit/{{ row[0] }}" class="text-blue-500 hover:text-blue-700">
-                                <i class="fas fa-pen"></i>
-                            </a>
-                            <a href="/module/1/delete/{{ row[0] }}" class="text-red-500 hover:text-red-700 ml-4">
-                                <i class="fas fa-trash"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <form action="/module/1" method="POST">
+                <table class="w-full border-collapse border border-gray-300 text-base shadow-lg bg-white">
+                    <thead>
+                        <tr class="bg-white text-center">
+                            <th class="border border-gray-300 p-2 font-bold text-black text-center">SPI Name</th>
+                            <th class="border border-gray-300 p-2 font-bold text-black text-center">Target<br><span class="font-normal text-xs">(for the ref. Period)</span></th>
+                            <th class="border border-gray-300 p-2 font-bold text-black text-center">Aver./Sum<br><span class="font-normal text-xs">(for the ref. Period)</span></th>
+                            <th class="border border-gray-300 p-2 font-bold text-black text-center">Rolling 12M</th>
+                            <th class="border border-gray-300 p-2 font-bold text-black text-center">Previous Full Year</th>
+                            {% for m in month_labels[:-1] %}
+                                <th class="border border-gray-300 p-2 font-bold text-black text-center">{{ m }}</th>
+                            {% endfor %}
+                            <th class="border border-gray-300 p-2 font-bold text-black text-center">Previous Month</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for spi in spi_names %}
+                            {% set is_group = "Fleet Block time" in spi or "Fleet Flight cycles" in spi or "Fleet Flight hours per cycle" in spi %}
+                            {% set is_flight_hours_per_cycle = spi in [
+                                "Flight hours per cycle (I-MSCA)",
+                                "Flight hours per cycle (I-MSCB)",
+                                "Flight hours per cycle (I-MSCC)"
+                            ] %}
+                            <tr class="{% if is_group %}bg-[#d9f1fb] font-bold{% elif loop.index0 % 2 == 0 %}bg-white{% else %}bg-[#fafdff]{% endif %}">
+                                <td class="border border-gray-300 p-2 {% if is_group %}text-black{% else %}pl-6{% endif %}">{{ spi }}</td>
+                                <td class="border border-gray-300 p-2 text-center align-middle">
+                                    {% if loop.index0 in [0,1] %}
+                                        ≥ 5000 FHs
+                                    {% elif loop.index0 in [2,3] %}
+                                        -
+                                    {% elif loop.index0 in [4,5] %}
+                                        ≥ 475 FCs
+                                    {% elif loop.index0 in [6,7] %}
+                                        -
+                                    {% elif loop.index0 in [8,9,10,11] %}
+                                        ≥ 8 FHs/FC
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="border border-gray-300 p-2 text-center">
+                                    {% if spi == "Fleet Block time (HH:MM) - COM flights only" %}
+                                        {{ avg_fleet_block_time }}
+                                    {% elif spi == "Fleet Flight cycles - COM flights only" %}
+                                        {{ avg_fleet_cycles }}
+                                    {% elif spi in [
+                                        "Fleet Flight hours per cycle",
+                                        "Flight hours per cycle (I-MSCA)",
+                                        "Flight hours per cycle (I-MSCB)",
+                                        "Flight hours per cycle (I-MSCC)"
+                                    ] %}
+                                        {{ avg_hours_per_cycle[spi] }}
+                                    {% else %}
+                                        <!-- other cases or leave empty -->
+                                    {% endif %}
+                                </td>
+                                <td class="border border-gray-300 p-2 text-center">
+                                    {% if spi in [
+                                        "Fleet Flight hours per cycle",
+                                        "Flight hours per cycle (I-MSCA)",
+                                        "Flight hours per cycle (I-MSCB)",
+                                        "Flight hours per cycle (I-MSCC)"
+                                    ] %}
+                                        {{ rolling_12m_hours_per_cycle[spi] }}
+                                    {% else %}
+                                        {{ rolling_12m[spi] }}
+                                    {% endif %}
+                                </td>
+                                <td class="border border-gray-300 p-2 text-center">
+                                    {% if spi in [
+                                        "Fleet Flight hours per cycle",
+                                        "Flight hours per cycle (I-MSCA)",
+                                        "Flight hours per cycle (I-MSCB)",
+                                        "Flight hours per cycle (I-MSCC)"
+                                    ] %}
+                                        {{ prev_year_hours_per_cycle[spi] }}
+                                    {% else %}
+                                        <!-- altri casi -->
+                                    {% endif %}
+                                </td>
+                                {% for m in month_labels[:-1] %}
+                                    <td class="border border-gray-300 p-2 text-center">
+                                        {% if spi == "Fleet Flight hours per cycle" %}
+                                            {% set val_bt = data["Fleet Block time (HH:MM) - COM flights only"][m] %}
+                                            {% set val_cy = data["Fleet Flight cycles - COM flights only"][m] %}
+                                            {% set minutes = (val_bt.split(':')[0]|int * 60 + val_bt.split(':')[1]|int) if val_bt and ':' in val_bt else 0 %}
+                                            {% set cycles = val_cy|int if val_cy and val_cy.isdigit() else 0 %}
+                                            {% if cycles > 0 %}
+                                                {% set avg = minutes / cycles %}
+                                                {{ "%02d:%02d" % (avg // 60, avg % 60) }}
+                                            {% else %}
+                                                00:00
+                                            {% endif %}
+                                        {% elif spi in [
+                                            "Flight hours per cycle (I-MSCA)",
+                                            "Flight hours per cycle (I-MSCB)",
+                                            "Flight hours per cycle (I-MSCC)"
+                                        ] %}
+                                            {% set ac = spi.split('(')[1].split(')')[0] %}
+                                            {% set val_bt = data["Block time (" ~ ac ~ ")"][m] %}
+                                            {% set val_cy = data["Flight cycles (" ~ ac ~ ")"][m] %}
+                                            {% set minutes = (val_bt.split(':')[0]|int * 60 + val_bt.split(':')[1]|int) if val_bt and ':' in val_bt else 0 %}
+                                            {% set cycles = val_cy|int if val_cy and val_cy.isdigit() else 0 %}
+                                            {% if cycles > 0 %}
+                                                {% set avg = minutes / cycles %}
+                                                {{ "%02d:%02d" % (avg // 60, avg % 60) }}
+                                            {% else %}
+                                                00:00
+                                            {% endif %}
+                                        {% else %}
+                                            {{ data[spi][m] }}
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                                <td class="border border-gray-300 p-2 text-center">
+                                    {% if spi in [
+                                        "Block time (I-MSCA)", "Block time (I-MSCB)", "Block time (I-MSCC)"
+                                    ] %}
+                                        {% set val = data[spi][previous_month] %}
+                                        <input type="text" name="{{ spi }}_hours" value="{{ val.split(':')[0] if val and ':' in val else '' }}" class="w-12 border rounded p-1 text-center" maxlength="2" placeholder="hh">
+                                        :
+                                        <input type="text" name="{{ spi }}_minutes" value="{{ val.split(':')[1] if val and ':' in val else '' }}" class="w-12 border rounded p-1 text-center" maxlength="2" placeholder="mm">
+                                    {% elif spi in [
+                                        "Flight cycles (I-MSCA)", "Flight cycles (I-MSCB)", "Flight cycles (I-MSCC)"
+                                    ] %}
+                                        <input type="text" name="{{ spi }}_cycle" value="{{ data[spi][previous_month] }}" class="w-16 border rounded p-1 text-center" maxlength="4" placeholder="cycles">
+                                    {% elif spi == "Fleet Flight hours per cycle" or spi.startswith("Flight hours per cycle") %}
+                                        {# Solo visualizzazione, calcolo automatico #}
+                                        {% if spi == "Fleet Flight hours per cycle" %}
+                                            {% set val_bt = data["Fleet Block time (HH:MM) - COM flights only"][previous_month] %}
+                                            {% set val_cy = data["Fleet Flight cycles - COM flights only"][previous_month] %}
+                                        {% else %}
+                                            {% set ac = spi.split('(')[1].split(')')[0] %}
+                                            {% set val_bt = data["Block time (" ~ ac ~ ")"][previous_month] %}
+                                            {% set val_cy = data["Flight cycles (" ~ ac ~ ")"][previous_month] %}
+                                        {% endif %}
+                                        {% set minutes = (val_bt.split(':')[0]|int * 60 + val_bt.split(':')[1]|int) if val_bt and ':' in val_bt else 0 %}
+                                        {% set cycles = val_cy|int if val_cy and val_cy.isdigit() else 0 %}
+                                        {% if cycles > 0 %}
+                                            {% set avg = minutes / cycles %}
+                                            {{ "%02d:%02d" % (avg // 60, avg % 60) }}
+                                        {% else %}
+                                            00:00
+                                        {% endif %}
+                                    {% else %}
+                                        {{ data[spi][previous_month] }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="mt-6 text-right">
+                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 font-bold shadow">Save previous month</button>
+                </div>
+            </form>
         </div>
     </main>
+    <div class="text-center mb-8">
+        <a href="/landing" class="inline-flex items-center bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-2 2v7a2 2 0 01-2 2h-4a2 2 0 01-2-2v-7m-2 2l-2 2m0-2l-2-2" />
+            </svg>
+            Home
+        </a>
+    </div>
 </body>
 </html>
