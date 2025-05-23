@@ -1,5 +1,5 @@
 import psycopg2
-from flask import Flask, render_template, request, redirect, g
+from flask import Flask, render_template, request, redirect, g, session, url_for
 import webbrowser
 from threading import Timer
 import os
@@ -7,8 +7,11 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a secure key here in production
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+USERNAME = os.environ.get("APP_USERNAME", "testuser")
+PASSWORD = os.environ.get("APP_PASSWORD", "mscairspa")
 
 # --- Utility functions ---
 
@@ -43,6 +46,30 @@ def close_db_connection(exception):
     if db_conn is not None:
         db_conn.close()
 
+# --- Authentication ---
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == USERNAME and password == PASSWORD:
+            session['logged_in'] = True
+            return redirect(url_for('intro_page'))
+        else:
+            return render_template('login.html', error='Invalid credentials')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+@app.before_request
+def require_login():
+    if request.endpoint not in ['login', 'static'] and not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
 # Route for the Intro Page
 @app.route('/')
 def intro_page():
