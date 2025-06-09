@@ -1,5 +1,5 @@
 import psycopg2
-from flask import Flask, render_template, request, redirect, g, session, url_for
+from flask import Flask, render_template, request, redirect, g, session, url_for, jsonify
 import webbrowser
 from threading import Timer
 import os
@@ -554,6 +554,7 @@ def module_2():
             cur.execute("""
                 INSERT INTO compliance_data (spi, reference_month, percentage)
                 VALUES (%s, %s, %s)
+                ON CONFLICT (spi, reference_month) DO UPDATE SET percentage = EXCLUDED.percentage
             """, (spi, reference_month, percentage))
             conn.commit()
         except Exception as e:
@@ -889,6 +890,43 @@ def reporting():
 @app.route('/success')
 def success():
     return render_template('success.html')
+
+@app.route('/module/1/chart-data', methods=['GET'])
+def get_chart_data():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Explicitly set months_to_fetch to 4
+    months_to_fetch = 4
+
+    # Calculate the date range for the last 'months_to_fetch' months
+    now = datetime.now()
+    month_labels = [(now - relativedelta(months=i)).strftime('%b-%y') for i in range(months_to_fetch)]
+
+    # Ensure the sequence of months is correct
+    month_labels.sort(key=lambda x: datetime.strptime(x, '%b-%y'))
+
+    # Query data for the chart
+    cur.execute("""
+        SELECT reference_month, flight_hours, flight_minutes
+        FROM occ_flight_data
+        WHERE spi_name = 'Fleet Block time (HH:MM) - COM flights only'
+          AND reference_month IN %s
+        ORDER BY reference_month
+    """, (tuple(month_labels),))
+    rows = cur.fetchall()
+
+    months = []
+    values = []
+    for month, hours, minutes in rows:
+        months.append(month)
+        total_minutes = safe_int(hours) * 60 + safe_int(minutes)
+        values.append(total_minutes / 60)  # Convert to hours
+
+    cur.close()
+    conn.close()
+
+    return jsonify({"months": months, "values": values})
 
 if __name__ == '__main__':
     # Funzione per aprire il browser predefinito (opzionale per Render)

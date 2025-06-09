@@ -175,5 +175,97 @@
             Home
         </a>
     </div>
+    <div class="text-center mb-9">
+    <a href="#" id="openChartPopup" class="inline-flex items-center bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-2 2v7a2 2 0 01-2 2h-4a2 2 0 01-2-2v-7m-2 2l-2 2m0-2l-2-2" />
+        </svg>
+        Graphs
+    </a>
+    </div>
+    <div id="chartPopup" class="popup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+      <div id="popupHeader" style="cursor: move; background: #f1f1f1; padding: 10px; border-bottom: 1px solid #ccc;">
+        <span id="closeChartPopup" class="close" style="cursor: pointer; float: right; font-size: 20px;">&times;</span>
+        <strong>Graphs</strong>
+      </div>
+      <div class="popup-content">
+        <canvas id="flightTimeChart" style="width: 100%; height: 500px;"></canvas>
+        <style>
+          .popup-content canvas {
+            max-width: 100%;
+            height: auto;
+          }
+          .popup-content th {
+            width: 20; /* Adjust column width to fit 6 columns */
+          }
+        </style>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      document.getElementById('openChartPopup').addEventListener('click', function() {
+        document.getElementById('chartPopup').style.display = 'block';
+        fetch('/module/1/chart-data')
+          .then(response => response.json())
+          .then(data => {
+            const ctx = document.getElementById('flightTimeChart').getContext('2d');
+            new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: data.months,
+                datasets: [{
+                  label: 'FlightTime - blockHours',
+                  data: data.values,
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                },
+                scales: {
+                  x: {
+                    ticks: {
+                      autoSkip: false,
+                    },
+                  },
+                },
+              },
+            });
+          });
+      });
+
+      document.getElementById('closeChartPopup').addEventListener('click', function() {
+        document.getElementById('chartPopup').style.display = 'none';
+      });
+
+      // Drag-and-drop functionality
+      const popup = document.getElementById('chartPopup');
+      const header = document.getElementById('popupHeader');
+
+      let offsetX = 0, offsetY = 0, isDragging = false;
+
+      header.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        offsetX = e.clientX - popup.offsetLeft;
+        offsetY = e.clientY - popup.offsetTop;
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (isDragging) {
+          popup.style.left = `${e.clientX - offsetX}px`;
+          popup.style.top = `${e.clientY - offsetY}px`;
+        }
+      });
+
+      document.addEventListener('mouseup', function() {
+        isDragging = false;
+      });
+    </script>
 </body>
 </html>
