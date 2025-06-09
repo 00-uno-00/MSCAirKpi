@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a secure key here in production
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = "postgresql://neondb_owner:npg_ibQE9C0cXNnZ@ep-aged-cake-a2x4wqvv-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 USERNAME = os.environ.get("APP_USERNAME", "testuser")
 PASSWORD = os.environ.get("APP_PASSWORD", "mscairspa")
 

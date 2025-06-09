@@ -128,7 +128,7 @@
                                         "Block time (I-MSCA)", "Block time (I-MSCB)", "Block time (I-MSCC)"
                                     ] %}
                                         {% set val = data[spi][previous_month] %}
-                                        <input type="text" name="{{ spi }}_hours" value="{{ val.split(':')[0] if val and ':' in val else '' }}" class="w-12 border rounded p-1 text-center" maxlength="2" placeholder="hh">
+                                        <input type="text" name="{{ spi }}_hours" value="{{ val.split(':')[0] if val and ':' in val else '' }}" class="w-12 border rounded p-1 text-center" maxlength="3" placeholder="hh">
                                         :
                                         <input type="text" name="{{ spi }}_minutes" value="{{ val.split(':')[1] if val and ':' in val else '' }}" class="w-12 border rounded p-1 text-center" maxlength="2" placeholder="mm">
                                     {% elif spi in [
