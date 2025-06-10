@@ -909,8 +909,8 @@ def get_chart_data():
     now = datetime.now()
     month_labels = [(now - relativedelta(months=i)).strftime('%b-%y') for i in range(months_to_fetch)]
 
-    # Ensure the sequence of months is correct
-    month_labels.reverse()  # Reverse the list to ensure chronological order
+    # Create a predefined order for months
+    month_order = {month: idx for idx, month in enumerate(month_labels[::-1])}  # Reverse to ensure chronological order
 
     # Query data for the chart
     cur.execute("""
@@ -921,6 +921,9 @@ def get_chart_data():
         ORDER BY reference_month
     """, (tuple(month_labels),))
     rows = cur.fetchall()
+
+    # Sort rows based on the predefined order
+    rows.sort(key=lambda row: month_order.get(row[0], float('inf')))
 
     months = []
     flight_hours_values = []
