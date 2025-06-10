@@ -596,6 +596,7 @@ def module_3():
             cur.execute("""
                 INSERT INTO safety_data (spi, reference_month, reference_year)
                 VALUES (%s, %s, %s)
+                ON CONFLICT (spi, reference_month, reference_year) DO NOTHING
             """, (spi, reference_month, reference_year))
             conn.commit()
         except Exception as e:
@@ -648,6 +649,7 @@ def module_4():
             cur.execute("""
                 INSERT INTO camo_data (spi, reference_month, reference_year, value)
                 VALUES (%s, %s, %s, %s)
+                ON CONFLICT (spi, reference_month, reference_year) DO NOTHING
             """, (spi, reference_month, reference_year, value))
             conn.commit()
         except Exception as e:
@@ -700,6 +702,7 @@ def module_5():
             cur.execute("""
                 INSERT INTO ground_ops_data (spi, reference_month, value)
                 VALUES (%s, %s, %s)
+                ON CONFLICT (spi, reference_month) DO NOTHING
             """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
@@ -752,6 +755,7 @@ def module_6():
             cur.execute("""
                 INSERT INTO crewtng_data (spi, reference_month, value)
                 VALUES (%s, %s, %s)
+                ON CONFLICT (spi, reference_month) DO NOTHING
             """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
@@ -804,6 +808,7 @@ def module_7():
             cur.execute("""
                 INSERT INTO flight_ops_data (spi, reference_month, value)
                 VALUES (%s, %s, %s)
+                ON CONFLICT (spi, reference_month) DO NOTHING
             """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
@@ -856,6 +861,7 @@ def module_8():
             cur.execute("""
                 INSERT INTO cargo_data (spi, reference_month, value)
                 VALUES (%s, %s, %s)
+                ON CONFLICT (spi, reference_month) DO NOTHING
             """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
@@ -896,19 +902,19 @@ def get_chart_data():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Explicitly set months_to_fetch to 4
-    months_to_fetch = 4
+    # Explicitly set months_to_fetch to 12
+    months_to_fetch = 12
 
     # Calculate the date range for the last 'months_to_fetch' months
     now = datetime.now()
     month_labels = [(now - relativedelta(months=i)).strftime('%b-%y') for i in range(months_to_fetch)]
 
     # Ensure the sequence of months is correct
-    month_labels.sort(key=lambda x: datetime.strptime(x, '%b-%y'))
+    month_labels.reverse()  # Reverse the list to ensure chronological order
 
     # Query data for the chart
     cur.execute("""
-        SELECT reference_month, flight_hours, flight_minutes
+        SELECT reference_month, flight_hours, flight_minutes, flight_cycle
         FROM occ_flight_data
         WHERE spi_name = 'Fleet Block time (HH:MM) - COM flights only'
           AND reference_month IN %s
@@ -917,16 +923,18 @@ def get_chart_data():
     rows = cur.fetchall()
 
     months = []
-    values = []
-    for month, hours, minutes in rows:
+    flight_hours_values = []
+    flight_cycles_values = []
+    for month, hours, minutes, cycles in rows:
         months.append(month)
         total_minutes = safe_int(hours) * 60 + safe_int(minutes)
-        values.append(total_minutes / 60)  # Convert to hours
+        flight_hours_values.append(total_minutes / 60)  # Convert to hours
+        flight_cycles_values.append(safe_int(cycles))
 
     cur.close()
     conn.close()
 
-    return jsonify({"months": months, "values": values})
+    return jsonify({"months": months, "flight_hours_values": flight_hours_values, "flight_cycles_values": flight_cycles_values})
 
 if __name__ == '__main__':
     # Funzione per aprire il browser predefinito (opzionale per Render)

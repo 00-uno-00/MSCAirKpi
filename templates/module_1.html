@@ -189,7 +189,8 @@
         <strong>Graphs</strong>
       </div>
       <div class="popup-content">
-        <canvas id="flightTimeChart" style="width: 100%; height: 500px;"></canvas>
+        <canvas id="flightTimeChart" style="width: 100%; height: 400px;"></canvas>
+        <canvas id="flightCyclesChart" style="width: 100%; height: 400px; margin-top: 20px;"></canvas>
         <style>
           .popup-content canvas {
             max-width: 100%;
@@ -209,16 +210,45 @@
         fetch('/module/1/chart-data')
           .then(response => response.json())
           .then(data => {
-            const ctx = document.getElementById('flightTimeChart').getContext('2d');
-            new Chart(ctx, {
+            const ctxFlightHours = document.getElementById('flightTimeChart').getContext('2d');
+            new Chart(ctxFlightHours, {
               type: 'line',
               data: {
                 labels: data.months,
                 datasets: [{
                   label: 'FlightTime - blockHours',
-                  data: data.values,
+                  data: data.flight_hours_values,
                   borderColor: 'rgba(75, 192, 192, 1)',
                   backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                },
+                scales: {
+                  x: {
+                    ticks: {
+                      autoSkip: false,
+                    },
+                  },
+                },
+              },
+            });
+
+            const ctxFlightCycles = document.getElementById('flightCyclesChart').getContext('2d');
+            new Chart(ctxFlightCycles, {
+              type: 'line',
+              data: {
+                labels: data.months,
+                datasets: [{
+                  label: 'Flight Cycles',
+                  data: data.flight_cycles_values,
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
                 }]
               },
               options: {
