@@ -183,21 +183,41 @@
         Graphs
     </a>
     </div>
-    <div id="chartPopup" class="popup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <div id="chartPopup" class="popup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); max-width: 90vw; max-height: 90vh; width: 900px; overflow: hidden;">
       <div id="popupHeader" style="cursor: move; background: #f1f1f1; padding: 10px; border-bottom: 1px solid #ccc;">
         <span id="closeChartPopup" class="close" style="cursor: pointer; float: right; font-size: 20px;">&times;</span>
         <strong>Graphs</strong>
       </div>
-      <div class="popup-content">
-        <canvas id="flightTimeChart" style="width: 100%; height: 400px;"></canvas>
-        <canvas id="flightCyclesChart" style="width: 100%; height: 400px; margin-top: 20px;"></canvas>
+      <div class="popup-content" style="overflow-y: auto; max-height: calc(90vh - 60px); padding: 15px;">
+        <div class="chart-container" style="position: relative; height: 300px; margin-bottom: 20px;">
+          <canvas id="flightTimeChart"></canvas>
+        </div>
+        <div class="chart-container" style="position: relative; height: 300px; margin-bottom: 20px;">
+          <canvas id="flightCyclesChart"></canvas>
+        </div>
+        <div class="chart-container" style="position: relative; height: 300px;">
+          <canvas id="fleetHoursPerCycleChart"></canvas>
+        </div>
         <style>
           .popup-content canvas {
-            max-width: 100%;
-            height: auto;
+            width: 100% !important;
+            height: 100% !important;
           }
-          .popup-content th {
-            width: 20; /* Adjust column width to fit 6 columns */
+          .chart-container {
+            background-color: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          @media (max-height: 900px) {
+            .chart-container {
+              height: 250px;
+            }
+          }
+          @media (max-height: 700px) {
+            .chart-container {
+              height: 200px;
+            }
           }
         </style>
       </div>
@@ -264,6 +284,50 @@
                       autoSkip: false,
                     },
                   },
+                },
+              },
+            });
+
+            // Calcola Fleet Hours per Cycle dividendo flight_hours_values per flight_cycles_values
+            const hoursPerCycle = data.flight_hours_values.map((hours, index) => {
+              const cycles = data.flight_cycles_values[index];
+              return cycles > 0 ? hours / cycles : 0;
+            });
+
+            const ctxHoursPerCycle = document.getElementById('fleetHoursPerCycleChart').getContext('2d');
+            new Chart(ctxHoursPerCycle, {
+              type: 'line',
+              data: {
+                labels: data.months,
+                datasets: [{
+                  label: 'Fleet Hours per Cycle',
+                  data: hoursPerCycle,
+                  borderColor: 'rgba(153, 102, 255, 1)',
+                  backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                },
+                scales: {
+                  x: {
+                    ticks: {
+                      autoSkip: false,
+                    },
+                  },
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: function(value) {
+                        return value.toFixed(2);
+                      }
+                    }
+                  }
                 },
               },
             });

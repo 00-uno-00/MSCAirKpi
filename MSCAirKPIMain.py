@@ -530,32 +530,29 @@ def edit_flight_data(id):
 @app.route('/module/2', methods=['GET', 'POST'])
 def module_2():
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor()    # Get current month and previous month
+    now = datetime.now()
+    previous_month_date = now - relativedelta(months=1)
+    previous_month = previous_month_date.strftime("%b-%y")
 
     if request.method == 'POST':
-        # Ottieni i dati dal modulo
-        spi = request.form.get('spi')
-        reference_month_abbr = request.form.get('reference_month')
-        reference_year = request.form.get('reference_year')
-        percentage = float(request.form.get('percentage'))
-
-        # Mappa dei mesi abbreviati a numeri
-        month_map = {
-            "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04",
-            "May": "05", "Jun": "06", "Jul": "07", "Aug": "08",
-            "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12"
-        }
-
-        # Combina anno e mese in formato YYYY-MM
-        reference_month = f"{reference_year}-{month_map[reference_month_abbr]}"
-
-        # Inserisci i dati nel database
+        # Ottieni i dati dal modulo e aggiorna solo il mese precedente
         try:
-            cur.execute("""
-                INSERT INTO compliance_data (spi, reference_month, percentage)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (spi, reference_month) DO UPDATE SET percentage = EXCLUDED.percentage
-            """, (spi, reference_month, percentage))
+            for spi_name in request.form:
+                if spi_name.endswith('_percentage'):
+                    spi = spi_name.replace('_percentage', '')
+                    try:
+                        percentage = float(request.form[spi_name])
+                        if 0 <= percentage <= 100:
+                            cur.execute("""
+                                INSERT INTO compliance_data (spi, reference_month, percentage)
+                                VALUES (%s, %s, %s)
+                                ON CONFLICT (spi, reference_month)
+                                DO UPDATE SET percentage = EXCLUDED.percentage
+                            """, (spi, previous_month, percentage))
+                    except ValueError:
+                        continue
+            
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -938,6 +935,64 @@ def get_chart_data():
     conn.close()
 
     return jsonify({"months": months, "flight_hours_values": flight_hours_values, "flight_cycles_values": flight_cycles_values})
+
+@app.route('/module/2/chart-data', methods=['GET'])
+def get_compliance_chart_data():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Calculate the date range for the last 12 months
+    now = datetime.now()
+    month_labels = [(now - relativedelta(months=i)).strftime('%b-%y') for i in range(12)]
+    month_labels.reverse()  # Ensure chronological order
+
+    # Get all unique SPIs from the database
+    cur.execute("""
+        SELECT DISTINCT spi
+        FROM compliance_data
+        ORDER BY spi
+    """)
+    spi_names = [row[0] for row in cur.fetchall()]
+
+    # Query data for each SPI
+    datasets = []
+    colors = [
+        'rgba(75, 192, 192, 1)',   # teal
+        'rgba(255, 99, 132, 1)',   # red
+        'rgba(153, 102, 255, 1)',  # purple
+        'rgba(255, 159, 64, 1)',   # orange
+        'rgba(54, 162, 235, 1)',   # blue
+        'rgba(255, 206, 86, 1)',   # yellow
+    ]
+
+    for idx, spi in enumerate(spi_names):
+        cur.execute("""
+            SELECT reference_month, percentage
+            FROM compliance_data
+            WHERE spi = %s AND reference_month = ANY(%s)
+            ORDER BY reference_month
+        """, (spi, month_labels))
+        
+        data = {month: 0 for month in month_labels}  # Initialize with zeros
+        for row in cur.fetchall():
+            data[row[0]] = float(row[1])
+
+        color_idx = idx % len(colors)
+        datasets.append({
+            'label': spi,
+            'data': list(data.values()),
+            'borderColor': colors[color_idx],
+            'backgroundColor': colors[color_idx].replace('1)', '0.2)'),
+            'hidden': idx > 0  # Show only first dataset by default
+        })
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "months": month_labels,
+        "datasets": datasets
+    })
 
 if __name__ == '__main__':
     # Funzione per aprire il browser predefinito (opzionale per Render)
