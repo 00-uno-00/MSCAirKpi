@@ -123,22 +123,44 @@ def module_1():
             if spi in ["Flight cycles (I-MSCA)", "Flight cycles (I-MSCB)", "Flight cycles (I-MSCC)"]:
                 cycle = safe_int(request.form.get(f"{spi}_cycle"))
                 if cycle:
+                    # Check if record exists
                     cur.execute("""
-                        INSERT INTO occ_flight_data (spi_name, reference_month, flight_cycle)
-                        VALUES (%s, %s, %s)
-                        ON CONFLICT (spi_name, reference_month)
-                        DO UPDATE SET flight_cycle = EXCLUDED.flight_cycle
-                    """, (spi, previous_month, cycle))
+                        SELECT id FROM occ_flight_data 
+                        WHERE spi_name = %s AND reference_month = %s
+                    """, (spi, previous_month))
+                    existing_record = cur.fetchone()
+                    if existing_record:
+                        cur.execute("""
+                            UPDATE occ_flight_data 
+                            SET flight_cycle = %s
+                            WHERE spi_name = %s AND reference_month = %s
+                        """, (cycle, spi, previous_month))
+                    else:
+                        cur.execute("""
+                            INSERT INTO occ_flight_data (spi_name, reference_month, flight_cycle)
+                            VALUES (%s, %s, %s)
+                        """, (spi, previous_month, cycle))
             elif not is_group:
                 hours = safe_int(request.form.get(f"{spi}_hours"))
                 minutes = safe_int(request.form.get(f"{spi}_minutes"))
                 if hours or minutes:
+                    # Check if record exists
                     cur.execute("""
-                        INSERT INTO occ_flight_data (spi_name, reference_month, flight_hours, flight_minutes)
-                        VALUES (%s, %s, %s, %s)
-                        ON CONFLICT (spi_name, reference_month)
-                        DO UPDATE SET flight_hours = EXCLUDED.flight_hours, flight_minutes = EXCLUDED.flight_minutes
-                    """, (spi, previous_month, hours, minutes))
+                        SELECT id FROM occ_flight_data 
+                        WHERE spi_name = %s AND reference_month = %s
+                    """, (spi, previous_month))
+                    existing_record = cur.fetchone()
+                    if existing_record:
+                        cur.execute("""
+                            UPDATE occ_flight_data 
+                            SET flight_hours = %s, flight_minutes = %s
+                            WHERE spi_name = %s AND reference_month = %s
+                        """, (hours, minutes, spi, previous_month))
+                    else:
+                        cur.execute("""
+                            INSERT INTO occ_flight_data (spi_name, reference_month, flight_hours, flight_minutes)
+                            VALUES (%s, %s, %s, %s)
+                        """, (spi, previous_month, hours, minutes))
         conn.commit()
 
         # --- UPDATE/CREATE FLEET BLOCK TIME RECORD ---
@@ -155,12 +177,23 @@ def module_1():
             avg_minutes = total_minutes // count
             avg_hours = avg_minutes // 60
             avg_only_minutes = avg_minutes % 60
+            # Check if record exists
             cur.execute("""
-                INSERT INTO occ_flight_data (spi_name, reference_month, flight_hours, flight_minutes)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (spi_name, reference_month)
-                DO UPDATE SET flight_hours = EXCLUDED.flight_hours, flight_minutes = EXCLUDED.flight_minutes
-            """, ("Fleet Block time (HH:MM) - COM flights only", previous_month, avg_hours, avg_only_minutes))
+                SELECT id FROM occ_flight_data 
+                WHERE spi_name = %s AND reference_month = %s
+            """, ("Fleet Block time (HH:MM) - COM flights only", previous_month))
+            existing_record = cur.fetchone()
+            if existing_record:
+                cur.execute("""
+                    UPDATE occ_flight_data 
+                    SET flight_hours = %s, flight_minutes = %s
+                    WHERE spi_name = %s AND reference_month = %s
+                """, (avg_hours, avg_only_minutes, "Fleet Block time (HH:MM) - COM flights only", previous_month))
+            else:
+                cur.execute("""
+                    INSERT INTO occ_flight_data (spi_name, reference_month, flight_hours, flight_minutes)
+                    VALUES (%s, %s, %s, %s)
+                """, ("Fleet Block time (HH:MM) - COM flights only", previous_month, avg_hours, avg_only_minutes))
 
         # --- UPDATE/CREATE FLEET FLIGHT CYCLES RECORD ---
         flight_cycle_children = ["Flight cycles (I-MSCA)", "Flight cycles (I-MSCB)", "Flight cycles (I-MSCC)"]
@@ -171,17 +204,29 @@ def module_1():
         """, (flight_cycle_children, previous_month))
         cycles = cur.fetchall()
         total_cycles = sum([safe_int(c[0]) for c in cycles if c[0] is not None])
+        # Check if record exists
         cur.execute("""
-            INSERT INTO occ_flight_data (spi_name, reference_month, flight_cycle)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (spi_name, reference_month)
-            DO UPDATE SET flight_cycle = EXCLUDED.flight_cycle
-        """, ("Fleet Flight cycles - COM flights only", previous_month, total_cycles))
+            SELECT id FROM occ_flight_data 
+            WHERE spi_name = %s AND reference_month = %s
+        """, ("Fleet Flight cycles - COM flights only", previous_month))
+        existing_record = cur.fetchone()
+        if existing_record:
+            cur.execute("""
+                UPDATE occ_flight_data 
+                SET flight_cycle = %s
+                WHERE spi_name = %s AND reference_month = %s
+            """, (total_cycles, "Fleet Flight cycles - COM flights only", previous_month))
+        else:
+            cur.execute("""
+                INSERT INTO occ_flight_data (spi_name, reference_month, flight_cycle)
+                VALUES (%s, %s, %s)
+            """, ("Fleet Flight cycles - COM flights only", previous_month, total_cycles))
 
         conn.commit()
 
         update_fleet_annual(cur, now)
         conn.commit()
+        # ...existing code...
 
     # Always update fleet annuals also in GET (to keep them consistent)
     update_fleet_annual(cur, now)
@@ -530,7 +575,9 @@ def edit_flight_data(id):
 @app.route('/module/2', methods=['GET', 'POST'])
 def module_2():
     conn = get_db_connection()
-    cur = conn.cursor()    # Get current month and previous month
+    cur = conn.cursor()
+
+    # Get current month and previous month
     now = datetime.now()
     previous_month_date = now - relativedelta(months=1)
     previous_month = previous_month_date.strftime("%b-%y")
@@ -544,12 +591,27 @@ def module_2():
                     try:
                         percentage = float(request.form[spi_name])
                         if 0 <= percentage <= 100:
+                            # Check if record exists
                             cur.execute("""
-                                INSERT INTO compliance_data (spi, reference_month, percentage)
-                                VALUES (%s, %s, %s)
-                                ON CONFLICT (spi, reference_month)
-                                DO UPDATE SET percentage = EXCLUDED.percentage
-                            """, (spi, previous_month, percentage))
+                                SELECT id FROM compliance_data 
+                                WHERE spi = %s AND reference_month = %s
+                            """, (spi, previous_month))
+                            
+                            existing_record = cur.fetchone()
+                            
+                            if existing_record:
+                                # Update existing record
+                                cur.execute("""
+                                    UPDATE compliance_data 
+                                    SET percentage = %s
+                                    WHERE spi = %s AND reference_month = %s
+                                """, (percentage, spi, previous_month))
+                            else:
+                                # Insert new record
+                                cur.execute("""
+                                    INSERT INTO compliance_data (spi, reference_month, percentage)
+                                    VALUES (%s, %s, %s)
+                                """, (spi, previous_month, percentage))
                     except ValueError:
                         continue
             
@@ -590,11 +652,23 @@ def module_3():
 
         # Inserisci i dati nel database
         try:
+            # Check if record exists for safety_data
             cur.execute("""
-                INSERT INTO safety_data (spi, reference_month, reference_year)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (spi, reference_month, reference_year) DO NOTHING
+                SELECT id FROM safety_data WHERE spi = %s AND reference_month = %s AND reference_year = %s
             """, (spi, reference_month, reference_year))
+            existing_record = cur.fetchone()
+            if existing_record:
+                # Update
+                cur.execute("""
+                    UPDATE safety_data SET spi = %s, reference_month = %s, reference_year = %s
+                    WHERE id = %s
+                """, (spi, reference_month, reference_year, existing_record[0]))
+            else:
+                # Insert
+                cur.execute("""
+                    INSERT INTO safety_data (spi, reference_month, reference_year)
+                    VALUES (%s, %s, %s)
+                """, (spi, reference_month, reference_year))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -643,11 +717,21 @@ def module_4():
 
         # Inserisci i dati nel database
         try:
+            # Check if record exists for camo_data
             cur.execute("""
-                INSERT INTO camo_data (spi, reference_month, reference_year, value)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (spi, reference_month, reference_year) DO NOTHING
-            """, (spi, reference_month, reference_year, value))
+                SELECT id FROM camo_data WHERE spi = %s AND reference_month = %s AND reference_year = %s
+            """, (spi, reference_month, reference_year))
+            existing_record = cur.fetchone()
+            if existing_record:
+                cur.execute("""
+                    UPDATE camo_data SET value = %s
+                    WHERE spi = %s AND reference_month = %s AND reference_year = %s
+                """, (value, spi, reference_month, reference_year))
+            else:
+                cur.execute("""
+                    INSERT INTO camo_data (spi, reference_month, reference_year, value)
+                    VALUES (%s, %s, %s, %s)
+                """, (spi, reference_month, reference_year, value))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -696,11 +780,21 @@ def module_5():
 
         # Inserisci i dati nel database
         try:
+            # Check if record exists for ground_ops_data
             cur.execute("""
-                INSERT INTO ground_ops_data (spi, reference_month, value)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (spi, reference_month) DO NOTHING
-            """, (spi, reference_month, value))
+                SELECT id FROM ground_ops_data WHERE spi = %s AND reference_month = %s
+            """, (spi, reference_month))
+            existing_record = cur.fetchone()
+            if existing_record:
+                cur.execute("""
+                    UPDATE ground_ops_data SET value = %s
+                    WHERE spi = %s AND reference_month = %s
+                """, (value, spi, reference_month))
+            else:
+                cur.execute("""
+                    INSERT INTO ground_ops_data (spi, reference_month, value)
+                    VALUES (%s, %s, %s)
+                """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -749,11 +843,21 @@ def module_6():
 
         # Inserisci i dati nel database
         try:
+            # Check if record exists for crewtng_data
             cur.execute("""
-                INSERT INTO crewtng_data (spi, reference_month, value)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (spi, reference_month) DO NOTHING
-            """, (spi, reference_month, value))
+                SELECT id FROM crewtng_data WHERE spi = %s AND reference_month = %s
+            """, (spi, reference_month))
+            existing_record = cur.fetchone()
+            if existing_record:
+                cur.execute("""
+                    UPDATE crewtng_data SET value = %s
+                    WHERE spi = %s AND reference_month = %s
+                """, (value, spi, reference_month))
+            else:
+                cur.execute("""
+                    INSERT INTO crewtng_data (spi, reference_month, value)
+                    VALUES (%s, %s, %s)
+                """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -802,11 +906,21 @@ def module_7():
 
         # Inserisci i dati nel database
         try:
+            # Check if record exists for flight_ops_data
             cur.execute("""
-                INSERT INTO flight_ops_data (spi, reference_month, value)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (spi, reference_month) DO NOTHING
-            """, (spi, reference_month, value))
+                SELECT id FROM flight_ops_data WHERE spi = %s AND reference_month = %s
+            """, (spi, reference_month))
+            existing_record = cur.fetchone()
+            if existing_record:
+                cur.execute("""
+                    UPDATE flight_ops_data SET value = %s
+                    WHERE spi = %s AND reference_month = %s
+                """, (value, spi, reference_month))
+            else:
+                cur.execute("""
+                    INSERT INTO flight_ops_data (spi, reference_month, value)
+                    VALUES (%s, %s, %s)
+                """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -855,11 +969,21 @@ def module_8():
 
         # Inserisci i dati nel database
         try:
+            # Check if record exists for cargo_data
             cur.execute("""
-                INSERT INTO cargo_data (spi, reference_month, value)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (spi, reference_month) DO NOTHING
-            """, (spi, reference_month, value))
+                SELECT id FROM cargo_data WHERE spi = %s AND reference_month = %s
+            """, (spi, reference_month))
+            existing_record = cur.fetchone()
+            if existing_record:
+                cur.execute("""
+                    UPDATE cargo_data SET value = %s
+                    WHERE spi = %s AND reference_month = %s
+                """, (value, spi, reference_month))
+            else:
+                cur.execute("""
+                    INSERT INTO cargo_data (spi, reference_month, value)
+                    VALUES (%s, %s, %s)
+                """, (spi, reference_month, value))
             conn.commit()
         except Exception as e:
             conn.rollback()
