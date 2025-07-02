@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>AirCargoKPI</title>
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/Navbar-Centered-Links-icons.css">
+</head>
+
+<body>
+    <div class="row text-center" style="background: #c4d79b;">
+        <div class="col">
+            <h1>SAFETY</h1>
+        </div>
+    </div>
+    <div class="row text-decoration-none d-flex overflow-auto justify-content-center">
+        <div class="col ms-0" style="padding: 2%;">
+            <div class="table-responsive">
+                <form action="/safety" method="POST">
+                <table class="table table-hover table-sm table-bordered" border="1" id="myTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Period</th>
+                            <th>Rolling 12-months Aver./Sum(as applicable)</th>
+                            <th data-format="YYYY/MM/DD">YTD Aver./Sum (as applicable)</th>
+                            <th>Year End 2024</th>
+                            <th>TARGET&nbsp;(12 months of operations)</th>
+                            <th>New Entry</th>
+                        </tr>
+                    </thead>
+                    <!-- Lots of useless stuff can be built dynamically with js not useful for now -->                       
+                        <tbody>
+                            <tr name="id_1">
+                                <td>Nr. of Safety Review Board perfomed</td>
+                                <td>{{ period }}</td>
+                                <td>{{ 12_m_avg}}</td>
+                                <td>{{ ytd_avg_sum }}</td>
+                                <td>{{ ytd_end }}</td>
+                                <td></td><!-- target --> 
+                                <td><input type="text" name="1"></td>
+                            </tr>
+                            <tr name="id_2">
+                                <td data-bs-toggle="tooltip" data-bss-tooltip="" title="This indicator captures the percentage of Recommendations implemented vs the total nr of Recommendations issued  Formula=(Nr of implemented recommendations/total recommendations issued)*100">% of Recommendations implemented (YTD)&nbsp;❔​</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="2"></td>
+                            </tr>
+                            <tr name="id_3">
+                                <td>Nr. of Emergency Response (ERP) drill performed</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="3"></td>
+                            </tr>
+                            <tr name="id_4">
+                                <td>Nr. of review of Safety Policy &amp; Objectives </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="4"></td>
+                            </tr>
+                            <tr name="id_5">
+                                <td>Nr of Accident </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="5"></td>
+                            </tr>
+                            <tr name="id_6">
+                                <td>Nr of Serious Incident</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="6"></td>
+                            </tr>
+                            <tr name="id_7">
+                                <td>Nr of Operational Incidents (MOR)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="7"></td>
+                            </tr>
+                            <tr name="id_8">
+                                <td>Nr of Technical Incidents (MOR)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="8"></td>
+                            </tr>
+                            <tr name="id_9">
+                                <td>Nr of Safety Reports (Voluntary &amp; confidential) per month</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="9"></td>
+                            </tr>
+                            <tr name="id_10">
+                                <td>Nr of Risk Assessments perfomed per month</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="10"></td>
+                            </tr>
+                            <tr name="id_11">
+                                <td>Nr of Hazards identified per month</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="11"></td>
+                            </tr>
+                            <tr name="id_12">
+                                <td>Nr of new Mitigations validated and implemented&nbsp;per month</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="12"></td>
+                            </tr>
+                            <tr name="id_13">
+                                <td>Nr. of Safety Bulletin published</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="13"></td>
+                            </tr>
+                            <tr name="id_14">
+                                <td>Nr. of Safety Flash published</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="14"></td>
+                            </tr>
+                            <tr name="id_15">
+                                <td>Nr. of Runway Incursions per month<br>(Source: Safety report)&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="15"></td>
+                            </tr>
+                            <tr name="id_16">
+                                <td>Nr. of Wildlife Strike per month<br>(Source: Safety report)&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="16"></td>
+                            </tr>
+                            <tr name="id_17">
+                                <td>Nr. of Level Bust per month<br>(Source: Safety report)&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="17"></td>
+                            </tr>
+                            <tr name="id_18">
+                                <td>Nr. of High speed rejected take-off per month<br>(Source: FDM)&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="18"></td>
+                            </tr>
+                            <tr name="id_19">
+                                <td>Nr. of Take-off with abnormal configuration per month<br>(Source: Safety report)&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="19"></td>
+                            </tr>
+                            <tr name="id_20">
+                                <td>Nr of Insufficient take-off performance per month<br>(Source: FDM)&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="20"></td>
+                            </tr>
+                            <tr name="id_21">
+                                <td>Nr of Unstable Approach per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="21"></td>
+                            </tr>
+                            <tr name="id_22">
+                                <td>Nr of Abnormal pitch at touchdown per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="22"></td>
+                            </tr>
+                            <tr name="id_23">
+                                <td>Nr. of Hard landing per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="23"></td>
+                            </tr>
+                            <tr name="id_24">
+                                <td>Nr of Aircraft lateral deviations at high speed on the ground (beginning of landing roll) per month<br>(Source: FDM, <span style="text-decoration: underline;">LF010 heading change after nose down</span>)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="24"></td>
+                            </tr>
+                            <tr name="id_25">
+                                <td>Nr of Aircraft lateral deviations at high speed on the ground (till end of take-off roll) per month<br>(Source: FDM, <span style="text-decoration: underline;">TF300 Takeoff heading range 100knt to rotation</span>)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="25"></td>
+                            </tr>
+                            <tr name="id_26">
+                                <td>Nr of Short rolling distance at landing per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="26"></td>
+                            </tr>
+                            <tr name="id_27">
+                                <td>Nr of (E)GPWS/TAWS Warning Trigger per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="27"></td>
+                            </tr>
+                            <tr name="id_28">
+                                <td>Nr of Pitch attitude high during take off per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="28"></td>
+                            </tr>
+                            <tr name="id_29">
+                                <td>Nr of Stall protection trigger per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="29"></td>
+                            </tr>
+                            <tr name="id_30">
+                                <td>Nr of Excessive speed per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="30"></td>
+                            </tr>
+                            <tr name="id_31">
+                                <td>Nr of Excessive vertical speed during climb per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="31"></td>
+                            </tr>
+                            <tr name="id_32">
+                                <td>Nr of Excessive vertical speed during descent per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="32"></td>
+                            </tr>
+                            <tr name>
+                                <td>Nr of Low go-around or rejected landing per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="33"></td>
+                            </tr>
+                            <tr name>
+                                <td>Nr of Reduced margin to manoeuvrability speed per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="34"></td>
+                            </tr>
+                            <tr name>
+                                <td>Nr of TCAS/ACAS Resolution Advisory per month<br>(Source: FDM)</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="35"></td>
+                            </tr>
+                            <tr name>
+                                <td>Nr. of COM flights captured by FDM per month</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="36"></td>
+                            </tr>
+                            <tr name>
+                                <td>Nr of of fatigue report form received per month</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td><input type="text" name="37"></td>
+                            </tr>
+                            <tr name="{{id}}">
+                                <td>{{spi_name}}</td>
+                                <td>{{period}}</td>
+                                <td>{{ rolling_avg_sum }}</td>
+                                <td>{{ ytd_avg_sum }}</td>
+                                <td>{{ ytd_end }}</td>
+                                <td></td>
+                                <td><input type="text" name="{{id}}"></td>
+                            </tr>
+                        </tbody>
+                </table>
+            </div>
+            <div class="row">
+                <div class="col d-flex justify-content-center"><button class="btn btn-primary btn-lg" type="submit" style="background: #c4d79b;color: var(--bs-black);font-weight: bold;border-style: none;" >SUBMIT</button></div>
+            </div>
+        </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <p class="d-flex justify-content-center">© MSC Technology Italia 2025 - Built with ❤️ in Italy</p>
+        </div>
+    </div>
+    <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+    <script src="assets/js/bs-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assets/js/Datatables-like-scrips-datatables.js"></script>
+    <script src="assets/js/load_data.js"></script>
+</body>
+
+</html>

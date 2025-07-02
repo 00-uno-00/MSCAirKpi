@@ -13,3 +13,7 @@
 
 ## Grafici
 - cosa si vuole rappresentare
+
+
+# Risposte
+
