@@ -4,6 +4,6 @@ import psycopg2
 from flask import g
 
 def get_db_connection():
-    if 'db_conn' not in g:
-        g.db_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    #if 'db_conn' not in g:
+    g.db_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return g.db_conn
