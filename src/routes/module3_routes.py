@@ -46,35 +46,38 @@ spis = [
 
 @module3_bp.route('/module/3', methods=['GET', 'POST'])
 def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!!
+    conn = get_db_connection()
+    cur = conn.cursor()
 
     if request.method == 'POST':
+        new_data = [] #buffer for one commit
+
         # Ottieni i dati dal modulo
         reference_month = datetime.today().month  # Usa il mese corrente come riferimento
         reference_year = datetime.today().year  # Usa l'anno corrente come riferimento
         for spi in spis:
             spi_id = spi['id']
-            spi_value = request.form.get(f'spi_{spi_id}')
+            spi_value = request.form.get(f'{spi_id}')
             if spi_value is not None:
                 try:
-                    spi_value = int(spi_value)  # Converti il valore in int
-                    # Verifica se il valore è negativo
+                    spi_value = int(spi_value)
                     if spi_value < 0:
                         return f"Invalid value for SPI {spi_id}: Value cannot be negative", 400
                     
-                    # Commit the update to the database
-                    commit_update_data(spi['spi_name'], spi_value, reference_month, reference_year) 
+                    # Aggiungi i dati al buffer
+                    new_data.append((spi['spi_name'], spi_value, reference_month, reference_year))
                     # perform commit
                 except ValueError:
                     return f"Invalid value for SPI {spi_id}", 400
             else:
                 spi_value = None
+        # Commit all data in one go
+        # Commit the update to the database
+        commit_update_data(new_data, conn) 
 
         return redirect('/module/3')
 
     # Recupera i dati esistenti dal database
-    conn = get_db_connection()
-    cur = conn.cursor()
-
     start_date = request.form.get('start_date', datetime.today().replace(month=1).replace(day=1))  # Default to the first day of the current month
     end_date = request.form.get('end_date', datetime.today().replace(day=1))
     
@@ -95,36 +98,50 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
     cur.close()
     conn.close()
 
+    processed_data = []
+    for spi in all_data:
+        spi_values = spi['values']
+        processed_spi = {
+            'id': spi['id'],
+            'spi_name': spi['spi_name'],
+            'data': process_data(spi_values)
+        }
+        processed_data.append(processed_spi)
+
     return render_template('SAFETY.html', rows=all_data)
 
-def commit_update_data(spi_name ,spi_value, reference_month, reference_year):
-    conn = get_db_connection()
+def commit_update_data(updated_spis, conn):
+    """
+    Inserisce o aggiorna i dati nel database per una lista di spi.
+    """
     cur = conn.cursor()
-    # Inserisci i dati nel database
-    try:
-        # Check if record exists for safety_data
-        cur.execute("""
-            SELECT id FROM safety_data WHERE spi = %s AND reference_month = %s AND reference_year = %s
-        """, (spi_name, reference_month, reference_year))
-        existing_record = cur.fetchone()
-        if existing_record:
-            # Update
+
+    for spi_name, value, month, year in updated_spis:
+        # Inserisci i dati nel database
+        try:
+            # Check if record exists for safety_data
             cur.execute("""
-                UPDATE safety_data SET spi = %s, reference_month = %s, reference_year = %s, created_at = NOW(),
-                value = %s
-                WHERE id = %s
-            """, (spi_name, reference_month, reference_year, spi_value, existing_record[0]))
-        else:
-            # Insert
-            cur.execute("""
-                INSERT INTO safety_data (spi, reference_month, reference_year, value)
-                VALUES (%s, %s, %s, %s)
-            """, (spi_name, reference_month, reference_year, spi_value))
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        print(f"Error inserting data: {e}")
-        return f"An error occurred: {e}", 500
+                SELECT id FROM safety_data WHERE spi = %s AND entry_date = date_trunc('month', date %s)
+            """, (spi_name, datetime(year, month, 1)))
+            existing_record = cur.fetchone()
+            if existing_record:
+                # Update
+                cur.execute("""
+                    UPDATE safety_data SET spi = %s, entry_date = date_trunc('month', date %s)
+                    value = %s
+                    WHERE id = %s
+                """, (spi_name,  existing_record[0])) #TODO ask if user wants to overwrite
+            else:
+                # Insert
+                cur.execute("""
+                    INSERT INTO safety_data (spi, value, entry_date)
+                    VALUES (%s, %s, %s)
+                """, (spi_name, value, datetime(year, month, 1)))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Error inserting data: {e}")
+            return f"An error occurred: {e}", 500
 
 def get_data_db(spi_name, start_date, end_date, cur):
     """
@@ -149,6 +166,35 @@ def get_data_db(spi_name, start_date, end_date, cur):
         print(f"Error fetching data for SPI {spi_name}: {e}")
         return []
     
+def process_data(data):
+    """
+    Processa i dati per calcolare le medie mobili e le somme YTD.
+    """
+    if not data:
+        return []
+
+    processed_data = []
+    
+    # Calcola la media mobile su 12 mesi
+    rolling_average = calc_12_months_rolling_average([d['value'] for d in data])
+    
+    # Calcola la media YTD
+    ytd_average = calc_ytd_average([d['value'] for d in data])
+    
+    # Calcola la somma YTD
+    ytd_sum = calc_ytd_sum([d['value'] for d in data])
+
+    for i, entry in enumerate(data):
+        processed_entry = {
+            'value': entry['value'],
+            'entry_date': entry['entry_date'],
+            'rolling_average': rolling_average[i] if i < len(rolling_average) else None,
+            'ytd_average': ytd_average[i] if i < len(ytd_average) else None,
+            'ytd_sum': ytd_sum[i] if i < len(ytd_sum) else None
+        }
+        processed_data.append(processed_entry)
+
+    return processed_data
 
 def calc_12_months_rolling_average(data):
     """
