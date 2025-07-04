@@ -68,7 +68,7 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
                     new_data.append((spi['spi_name'], spi_value, reference_month, reference_year))
                     # perform commit
                 except ValueError:
-                    return f"Invalid value for SPI {spi_id}", 400
+                    return f"Invalid value for SPI {spi_id}", 400 #TODO add a popup
             else:
                 spi_value = None
         # Commit all data in one go
@@ -78,37 +78,51 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
         return redirect('/module/3')
 
     # Recupera i dati esistenti dal database
-    start_date = request.form.get('start_date', datetime.today().replace(month=1).replace(day=1))  # Default to the first day of the current month
-    end_date = request.form.get('end_date', datetime.today().replace(day=1))
-    
-    all_data = []
-    for spi in spis:
-        try:
-            spi_data = get_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
-            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
-            ###
-            #id
-            #spi_name
-            #values
-            #   | spi_data = 'value', 'entry_date'
-            ###
-        except Exception as e:
-            print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
+    if request.method == 'GET':
+        # Use request.args for GET parameters
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
 
-    cur.close()
-    conn.close()
+        # Requires formatting or default values
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        else:
+            start_date = datetime.today().replace(month=1, day=1)
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        else:
+            end_date = datetime.today().replace(day=1)
 
-    processed_data = []
-    for spi in all_data:
-        spi_values = spi['values']
-        processed_spi = {
-            'id': spi['id'],
-            'spi_name': spi['spi_name'],
-            'data': process_data(spi_values)
-        }
-        processed_data.append(processed_spi)
+        
 
-    return render_template('SAFETY.html', rows=all_data)
+        all_data = []
+        for spi in spis:
+            try:
+                spi_data = retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
+                all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
+                ###
+                #id
+                #spi_name
+                #values
+                #   | spi_data = ['value', 'entry_date']
+                ###
+            except Exception as e:
+                print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
+
+        cur.close()
+        conn.close()
+
+        processed_data = []
+        for spi in all_data:
+            spi_values = spi['values']
+            processed_spi = {
+                'id': spi['id'],
+                'spi_name': spi['spi_name'],
+                'data': process_data(spi_values)
+            }
+            processed_data.append(processed_spi)
+
+        return render_template('SAFETY.html', rows=processed_data, start_date_value=start_date.strftime('%Y-%m-%d'), end_date_value=end_date.strftime('%Y-%m-%d'))
 
 def commit_update_data(updated_spis, conn):
     """
@@ -143,7 +157,7 @@ def commit_update_data(updated_spis, conn):
             print(f"Error inserting data: {e}")
             return f"An error occurred: {e}", 500
 
-def get_data_db(spi_name, start_date, end_date, cur):
+def retrieve_data_db(spi_name, start_date, end_date, cur):
     """
     Recupera i dati dal database per un determinato SPI.
     """
@@ -171,32 +185,28 @@ def process_data(data):
     Processa i dati per calcolare le medie mobili e le somme YTD.
     """
     if not data:
-        return []
-
-    processed_data = []
-    
-    # Calcola la media mobile su 12 mesi
-    rolling_average = calc_12_months_rolling_average([d['value'] for d in data])
-    
-    # Calcola la media YTD
-    ytd_average = calc_ytd_average([d['value'] for d in data])
-    
-    # Calcola la somma YTD
-    ytd_sum = calc_ytd_sum([d['value'] for d in data])
-
-    for i, entry in enumerate(data):
-        processed_entry = {
-            'value': entry['value'],
-            'entry_date': entry['entry_date'],
-            'rolling_average': rolling_average[i] if i < len(rolling_average) else None,
-            'ytd_average': ytd_average[i] if i < len(ytd_average) else None,
-            'ytd_sum': ytd_sum[i] if i < len(ytd_sum) else None
+        return {
+            'values': [],
+            'rolling_average': [],
+            'ytd_average': None,
+            'ytd_sum': 0
         }
-        processed_data.append(processed_entry)
 
-    return processed_data
+    # values_with_dates: list of dicts with value and entry_date, like in all_data
+    values_with_dates = [{'value': d['value'], 'entry_date': d['entry_date']} for d in data]
+    values = [d['value'] for d in data]
+    rolling_average = calc_12_months_rolling_average(values)
+    ytd_average = calc_ytd_average(values)
+    ytd_sum = calc_ytd_sum(values)
+    print(f"Processed data: {values_with_dates}, {rolling_average}, {ytd_average}, {ytd_sum}")
+    return {
+        'values': values_with_dates,
+        #'rolling_average': rolling_average,
+        'ytd_average': ytd_average,
+        'ytd_sum': ytd_sum
+    }
 
-def calc_12_months_rolling_average(data):
+def calc_12_months_rolling_average(data):#TODO
     """
     Calcola la media mobile su 12 mesi per i dati forniti.
     """
@@ -220,9 +230,8 @@ def calc_ytd_average(data):
     Calcola la media YTD (Year To Date) per i dati forniti.
     """
     if not data:
-        return []
+        return None
 
-    ytd_average = []
     total = 0
     count = 0
 
@@ -230,11 +239,12 @@ def calc_ytd_average(data):
         if value is not None:
             total += value
             count += 1
-            ytd_average.append(total / count)
         else:
-            ytd_average.append(None)
+            total = 0
+            count = 0
+    
 
-    return ytd_average
+    return total / count if count > 0 else None
 
 def calc_ytd_sum(data):
     """
@@ -243,12 +253,10 @@ def calc_ytd_sum(data):
     if not data:
         return []
 
-    ytd_sum = []
     total = 0
 
     for value in data:
         if value is not None:
             total += value
-        ytd_sum.append(total)
 
-    return ytd_sum
+    return total if total > 0 else 0
