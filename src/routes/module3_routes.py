@@ -1,6 +1,12 @@
 from flask import Blueprint,render_template, request, redirect
 from src.utils.db import get_db_connection
 from datetime import datetime
+import pandas as pd
+
+### DATA ANALYSIS
+import plotly.express as px
+import plotly.graph_objects as go
+
 
 module3_bp = Blueprint('module3', __name__)
 #!!! IDS USED FOR IDENTIFICATION WITHIN THE TABLE NOT TO IDENTIFY SPI CLASS !!!
@@ -43,6 +49,8 @@ spis = [
     { "id": 35, "spi_name": "Nr of TCAS/ACAS Resolution Advisory per month (Source: FDM)" },
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
     { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }"""
+
+processed_data = [] # buffer for processed data to be used in the template & graphs
 
 @module3_bp.route('/module/3', methods=['GET', 'POST'])
 def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!!
@@ -112,7 +120,6 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
         cur.close()
         conn.close()
 
-        processed_data = []
         for spi in all_data:
             spi_values = spi['values']
             processed_spi = {
@@ -122,7 +129,9 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
             }
             processed_data.append(processed_spi)
 
-        return render_template('SAFETY.html', rows=processed_data, start_date_value=start_date.strftime('%Y-%m-%d'), end_date_value=end_date.strftime('%Y-%m-%d'))
+            graphs = interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])
+    
+        return render_template('SAFETY.html', graphs=graphs, rows=processed_data, start_date_value=start_date.strftime('%Y-%m-%d'), end_date_value=end_date.strftime('%Y-%m-%d'))
 
 def commit_update_data(updated_spis, conn):
     """
@@ -195,10 +204,9 @@ def process_data(data):
     # values_with_dates: list of dicts with value and entry_date, like in all_data
     values_with_dates = [{'value': d['value'], 'entry_date': d['entry_date']} for d in data]
     values = [d['value'] for d in data]
-    rolling_average = calc_12_months_rolling_average(values)
+    #rolling_average = calc_12_months_rolling_average(values)
     ytd_average = calc_ytd_average(values)
     ytd_sum = calc_ytd_sum(values)
-    print(f"Processed data: {values_with_dates}, {rolling_average}, {ytd_average}, {ytd_sum}")
     return {
         'values': values_with_dates,
         #'rolling_average': rolling_average,
@@ -260,3 +268,62 @@ def calc_ytd_sum(data):
             total += value
 
     return total if total > 0 else 0
+
+def interactive_plot(df, spi_name):
+    """ 
+        Generate an interactive plot for the given DataFrame and SPI name.
+    """
+
+    fig = go.Figure()
+    
+    fig.update_layout(
+        title= f'{spi_name} - over time',
+        xaxis_title='Entry Date',
+        yaxis_title='SPI Value',
+        template='plotly_white',
+        height=600,
+        width=1000
+    )
+
+    df['entry_date'] = pd.to_datetime(df['entry_date'])  # Ensure entry_date is in datetime format
+
+    min_date = df['entry_date'].min()
+    max_date = df['entry_date'].max()
+    # Set interval (e.g., every 1 month)
+    fig.update_xaxes(
+        range=[min_date, max_date],
+        dtick="M1", 
+        tickformat="%Y-%m"
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df['entry_date'],
+            y=df['value'],
+            mode='lines+markers',
+            name='SPI Value',
+            line=dict(color='blue', width=2),
+            marker=dict(size=5)
+        )
+    )
+
+    return fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+#@module3_bp.route('/module/3/graphs', methods=['GET'])
+def module_3_graphs():
+    """
+    Render the graphs for the safety module.
+    """
+    
+    graphs = []
+
+    for spi in processed_data:
+        try:
+            graphs.append({
+                interactive_plot(pd.DataFrame(spi['data']['values']), spi['spi_name'])
+            })
+        except Exception as e:
+            print(f"Error generating graph for SPI {spi['spi_name']}: {e}")
+    
+    return render_template('graph.html', graph=interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name']))
+    #return interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])  # Return the first graph as an example

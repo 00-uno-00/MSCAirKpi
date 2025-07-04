@@ -1,4 +1,5 @@
-fix Render grafici 
-visualizzazione primo del mese
-ui con bootstrap studio
 autosave (guarda search tweb)
+graphs:
+- safety reports
+- operational incidents
+- technical incidents
