@@ -1,18 +1,18 @@
 from flask import Blueprint,render_template, request, redirect
-from src.utils.db import get_db_connection
+import src.utils.spis as spi_utils
+import src.utils.db as db_utils
 from datetime import datetime
 import pandas as pd
 
 ### DATA ANALYSIS
-import plotly.express as px
 import plotly.graph_objects as go
 
 
 module3_bp = Blueprint('module3', __name__)
 #!!! IDS USED FOR IDENTIFICATION WITHIN THE TABLE NOT TO IDENTIFY SPI CLASS !!!
 spis = [
-    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed" },
-    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)" },
+    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum"},
+    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": 95, "mode": "avg"},
 ]
 """{ "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed" },
     { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives" },
@@ -50,14 +50,14 @@ spis = [
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
     { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }"""
 
-graphs_spis = [
+graphs_spis = [ ### Note all the SPIs need to be in the spis list to be displayed in the graphs
     {"spi_name": "Nr. of Safety Review Board perfomed" },
     {"spi_name": "% of Recommendations implemented (YTD)" },
 ]
 
 @module3_bp.route('/module/3', methods=['GET', 'POST'])
 def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!!
-    conn = get_db_connection()
+    conn = db_utils.get_db_connection()
     cur = conn.cursor()
 
     if request.method == 'POST':
@@ -84,7 +84,7 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
                 spi_value = None
         # Commit all data in one go
         # Commit the update to the database
-        commit_update_data(new_data, conn) 
+        db_utils.commit_update_data(new_data, conn) 
 
         return redirect('/module/3')
 
@@ -109,7 +109,7 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
         all_data = []
         for spi in spis:
             try:
-                spi_data = retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
+                spi_data = db_utils.retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
                 all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
                 ###
                 #id
@@ -130,7 +130,8 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
             processed_spi = {
                 'id': spi['id'],
                 'spi_name': spi['spi_name'],
-                'data': process_data(spi_values)
+                'data': spi_utils.process_data(spi_values, spi['id']),
+                'target_value': spi_utils.get_spi_by_id(spi['id'])['target_value']
             }
             
             processed_data.append(processed_spi)
@@ -140,149 +141,7 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
     
         return render_template('SAFETY.html', rows=processed_data, start_date_value=start_date.strftime('%Y-%m-%d'), end_date_value=end_date.strftime('%Y-%m-%d'))
 
-def commit_update_data(updated_spis, conn):
-    """
-    Inserisce o aggiorna i dati nel database per una lista di spi.
-    """
-    cur = conn.cursor()
-
-    for spi_name, value, month, year in updated_spis:
-        # Inserisci i dati nel database
-        try:
-            # Check if record exists for safety_data
-            cur.execute("""
-                SELECT id FROM safety_data WHERE spi = %s AND entry_date = date_trunc('month', date %s)
-            """, (spi_name, datetime(year, month, 1)))
-            existing_record = cur.fetchone()
-            if existing_record:
-                # Update
-                cur.execute("""
-                    UPDATE safety_data SET spi = %s, entry_date = date_trunc('month', date %s)
-                    value = %s
-                    WHERE id = %s
-                """, (spi_name,  existing_record[0])) #TODO ask if user wants to overwrite
-            else:
-                # Insert
-                cur.execute("""
-                    INSERT INTO safety_data (spi, value, entry_date)
-                    VALUES (%s, %s, %s)
-                """, (spi_name, value, datetime(year, month, 1)))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"Error inserting data: {e}")
-            return f"An error occurred: {e}", 500
-
-def retrieve_data_db(spi_name, start_date, end_date, cur):
-    """
-    Recupera i dati dal database per un determinato SPI.
-    Args:
-        spi_name (str): Il nome dello SPI da cui recuperare i dati.
-        start_date (datetime.date): La data di inizio del range.
-        end_date (datetime.date): La data di fine del range.
-    Returns:
-        list: Una lista di dizionari contenenti i valori e le date di inserimento.
-    N.B. selezionando un range di un solo mese un singolo mese verra' ritornato
-    """
-
-    try:
-        # Query per ottenere i dati per gli SPIs specificati 
-        cur.execute(
-            """
-            SELECT value, entry_date FROM safety_data
-            WHERE spi = %s AND entry_date BETWEEN date_trunc('month', date %s) AND date_trunc('month', date %s)
-            ORDER BY entry_date
-            """,
-            (spi_name, start_date, end_date)
-        )
-        data = cur.fetchall()
-        # Return both value and entry_date as a list of dicts
-        return [{'value': d[0], 'entry_date': d[1]} for d in data]
-    except Exception as e:
-        print(f"Error fetching data for SPI {spi_name}: {e}")
-        return []
-    
-def process_data(data):
-    """
-    Processa i dati per calcolare le medie mobili e le somme YTD.
-    """
-    if not data:
-        return {
-            'values': [],
-            'rolling_average': [],
-            'ytd_average': None,
-            'ytd_sum': 0
-        }
-
-    # values_with_dates: list of dicts with value and entry_date, like in all_data
-    values_with_dates = [{'value': d['value'], 'entry_date': d['entry_date']} for d in data]
-    values = [d['value'] for d in data]
-    #rolling_average = calc_12_months_rolling_average(values)
-    ytd_average = calc_ytd_average(values)
-    ytd_sum = calc_prev_year_sum(values_with_dates)
-    return {
-        'values': values_with_dates,
-        #'rolling_average': rolling_average,
-        'ytd_average': ytd_average,
-        'ytd_sum': ytd_sum
-    }
-
-def calc_12_months_rolling_average(data):#TODO
-    """
-    Calcola la media mobile su 12 mesi per i dati forniti.
-    """
-    if not data:
-        return []
-
-    rolling_average = []
-    for i in range(len(data)):
-        if i < 11:
-            # Non abbiamo abbastanza dati per calcolare la media mobile su 12 mesi
-            rolling_average.append(None)
-        else:
-            # Calcola la media degli ultimi 12 mesi
-            avg = sum(data[i-11:i+1]) / 12
-            rolling_average.append(avg)
-
-    return rolling_average
-
-def calc_ytd_average(data):
-    """
-    Calcola la media YTD (Year To Date) per i dati forniti.
-    """
-    if not data:
-        return None
-
-    total = 0
-    count = 0
-
-    for value in data:
-        if value is not None:
-            total += value
-            count += 1
-        else:
-            total = 0
-            count = 0
-    
-
-    return total / count if count > 0 else None
-
-def calc_prev_year_sum(data):
-    """
-    Calcola la somma YTD (Year To Date) per i dati forniti.
-    """
-    if not data:
-        return []
-
-    total = 0
-
-    for value in data:
-        if value is not None and value['entry_date'].year == datetime.today().year-1:
-            total += value
-
-    return total if total > 0 else 0
-
-def interactive_plot(df, spi_name):
+def interactive_plot(df, spi_name, target_value=0):
     """ 
         Generate an interactive plot for the given DataFrame and SPI name.
     """
@@ -306,7 +165,7 @@ def interactive_plot(df, spi_name):
         dtick="M1", 
         tickformat="%Y-%m"
     )
-
+    # Graph
     fig.add_trace(
         go.Scatter(
             x=df['entry_date'],
@@ -317,34 +176,22 @@ def interactive_plot(df, spi_name):
             marker=dict(size=5)
         )
     )
-    
+    # target
+    fig.add_trace(
+        go.Scatter(
+            x=[min_date, max_date],
+            y=[target_value, target_value],
+            mode='lines',
+            name='Target Value',
+            line=dict(color='red', dash='dash'),
+            showlegend=True
+        )
+    )
     return fig.to_html(full_html=True, include_plotlyjs='cdn')
 
-"""
 @module3_bp.route('/module/3/graphs')
 def module_3_graphs():
-  
-    Render the graphs for the safety module.
-    
-    
-    graphs = []
-
-   
-
-    for spi in processed_data:
-        try:
-            graphs.append({
-                interactive_plot(pd.DataFrame(spi['data']['values']), spi['spi_name'])
-            })
-        except Exception as e:
-            print(f"Error generating graph for SPI {spi['spi_name']}: {e}")
-    
-    return interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])
-    #return interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])  # Return the first graph as an example
-    """
-@module3_bp.route('/module/3/graphs')
-def module_3_graphs():
-    conn = get_db_connection()
+    conn = db_utils.get_db_connection()
     cur = conn.cursor()
     # Use the same date range logic as in /module/3
     start_date = datetime.today().replace(month=1, day=1)
@@ -352,8 +199,8 @@ def module_3_graphs():
     all_data = []
     for spi in spis:
         try:
-            spi_data = retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
-            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
+            spi_data = db_utils.retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
+            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'target_value': spi['target_value'],'values': spi_data})
         except Exception as e:
             print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
     cur.close()
@@ -365,9 +212,8 @@ def module_3_graphs():
             processed_spi = {
                 'id': spi['id'],
                 'spi_name': spi['spi_name'],
-                'data': process_data(spi_values)
+                'data': spi_utils.process_data(spi_values, spi['id'])
             }
-            graphs+=interactive_plot(pd.DataFrame(processed_spi['data']['values']), processed_spi['spi_name'])
-
-    # Now you can safely use processed_data[0]
+            graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi["data"]["values"]), processed_spi["spi_name"], spi["target_value"])}</div>'
+    
     return graphs
