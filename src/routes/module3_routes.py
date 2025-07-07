@@ -50,7 +50,10 @@ spis = [
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
     { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }"""
 
-processed_data = [] # buffer for processed data to be used in the template & graphs
+graphs_spis = [
+    {"spi_name": "Nr. of Safety Review Board perfomed" },
+    {"spi_name": "% of Recommendations implemented (YTD)" },
+]
 
 @module3_bp.route('/module/3', methods=['GET', 'POST'])
 def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!!
@@ -120,6 +123,8 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
         cur.close()
         conn.close()
 
+        processed_data = []# buffer for processed data to be used in the template & graphs
+
         for spi in all_data:
             spi_values = spi['values']
             processed_spi = {
@@ -127,11 +132,13 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
                 'spi_name': spi['spi_name'],
                 'data': process_data(spi_values)
             }
+            
             processed_data.append(processed_spi)
+                
 
-            graphs = interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])
+            #graphs = interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])
     
-        return render_template('SAFETY.html', graphs=graphs, rows=processed_data, start_date_value=start_date.strftime('%Y-%m-%d'), end_date_value=end_date.strftime('%Y-%m-%d'))
+        return render_template('SAFETY.html', rows=processed_data, start_date_value=start_date.strftime('%Y-%m-%d'), end_date_value=end_date.strftime('%Y-%m-%d'))
 
 def commit_update_data(updated_spis, conn):
     """
@@ -169,11 +176,17 @@ def commit_update_data(updated_spis, conn):
 def retrieve_data_db(spi_name, start_date, end_date, cur):
     """
     Recupera i dati dal database per un determinato SPI.
+    Args:
+        spi_name (str): Il nome dello SPI da cui recuperare i dati.
+        start_date (datetime.date): La data di inizio del range.
+        end_date (datetime.date): La data di fine del range.
+    Returns:
+        list: Una lista di dizionari contenenti i valori e le date di inserimento.
+    N.B. selezionando un range di un solo mese un singolo mese verra' ritornato
     """
 
     try:
         # Query per ottenere i dati per gli SPIs specificati 
-        # N.B. selezionando un range di un solo mese un singolo mese verra' ritornato
         cur.execute(
             """
             SELECT value, entry_date FROM safety_data
@@ -206,7 +219,7 @@ def process_data(data):
     values = [d['value'] for d in data]
     #rolling_average = calc_12_months_rolling_average(values)
     ytd_average = calc_ytd_average(values)
-    ytd_sum = calc_ytd_sum(values)
+    ytd_sum = calc_prev_year_sum(values_with_dates)
     return {
         'values': values_with_dates,
         #'rolling_average': rolling_average,
@@ -254,7 +267,7 @@ def calc_ytd_average(data):
 
     return total / count if count > 0 else None
 
-def calc_ytd_sum(data):
+def calc_prev_year_sum(data):
     """
     Calcola la somma YTD (Year To Date) per i dati forniti.
     """
@@ -264,7 +277,7 @@ def calc_ytd_sum(data):
     total = 0
 
     for value in data:
-        if value is not None:
+        if value is not None and value['entry_date'].year == datetime.today().year-1:
             total += value
 
     return total if total > 0 else 0
@@ -280,9 +293,7 @@ def interactive_plot(df, spi_name):
         title= f'{spi_name} - over time',
         xaxis_title='Entry Date',
         yaxis_title='SPI Value',
-        template='plotly_white',
-        height=600,
-        width=1000
+        template='plotly_white'
     )
 
     df['entry_date'] = pd.to_datetime(df['entry_date'])  # Ensure entry_date is in datetime format
@@ -306,16 +317,19 @@ def interactive_plot(df, spi_name):
             marker=dict(size=5)
         )
     )
+    
+    return fig.to_html(full_html=True, include_plotlyjs='cdn')
 
-    return fig.to_html(full_html=False, include_plotlyjs='cdn')
-
-#@module3_bp.route('/module/3/graphs', methods=['GET'])
+"""
+@module3_bp.route('/module/3/graphs')
 def module_3_graphs():
-    """
+  
     Render the graphs for the safety module.
-    """
+    
     
     graphs = []
+
+   
 
     for spi in processed_data:
         try:
@@ -325,5 +339,35 @@ def module_3_graphs():
         except Exception as e:
             print(f"Error generating graph for SPI {spi['spi_name']}: {e}")
     
-    return render_template('graph.html', graph=interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name']))
+    return interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])
     #return interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])  # Return the first graph as an example
+    """
+@module3_bp.route('/module/3/graphs')
+def module_3_graphs():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    # Use the same date range logic as in /module/3
+    start_date = datetime.today().replace(month=1, day=1)
+    end_date = datetime.today().replace(day=1)
+    all_data = []
+    for spi in spis:
+        try:
+            spi_data = retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
+            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
+        except Exception as e:
+            print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
+    cur.close()
+    conn.close()
+    graphs = ""
+    for spi in all_data:
+        if spi['spi_name'] in [g['spi_name'] for g in graphs_spis]:
+            spi_values = spi['values']
+            processed_spi = {
+                'id': spi['id'],
+                'spi_name': spi['spi_name'],
+                'data': process_data(spi_values)
+            }
+            graphs+=interactive_plot(pd.DataFrame(processed_spi['data']['values']), processed_spi['spi_name'])
+
+    # Now you can safely use processed_data[0]
+    return graphs
