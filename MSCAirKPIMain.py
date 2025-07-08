@@ -1,13 +1,16 @@
-import psycopg2
 from flask import Flask, render_template, request, redirect, g, session, url_for, jsonify
 import webbrowser
 from threading import Timer
 import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from src.routes import module3_routes
+from src.utils.db import get_db_connection
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a secure key here in production
+
+app.register_blueprint(module3_routes.module3_bp)
 
 DATABASE_URL = "postgresql://neondb_owner:npg_ibQE9C0cXNnZ@ep-aged-cake-a2x4wqvv-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 USERNAME = os.environ.get("APP_USERNAME", "testuser")
@@ -35,11 +38,6 @@ def minutes_to_hhmm(minutes):
     mins = minutes % 60
     return f"{str(hours).zfill(2)}:{str(mins).zfill(2)}"
 
-def get_db_connection():
-    if 'db_conn' not in g:
-        g.db_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-    return g.db_conn
-
 @app.teardown_appcontext
 def close_db_connection(exception):
     db_conn = g.pop('db_conn', None)
@@ -57,7 +55,7 @@ def login():
             session['logged_in'] = True
             return redirect(url_for('intro_page'))
         else:
-            return render_template('login.html', error='Invalid credentials')
+            return render_template('html/login.html', error='Invalid credentials')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -638,59 +636,7 @@ def module_2():
     cur.close()
     return render_template('module_2.html', compliance_data=compliance_data)
 
-# Route for Module 3 (Pilot Training Department)
-@app.route('/module/3', methods=['GET', 'POST'])
-def module_3():
-    conn = get_db_connection()
-    cur = conn.cursor()
 
-    if request.method == 'POST':
-        # Ottieni i dati dal modulo
-        spi = request.form.get('spi')
-        reference_month = request.form.get('reference_month')  # Ora contiene solo il mese (es. "Jan")
-        reference_year = request.form.get('reference_year')
-
-        # Inserisci i dati nel database
-        try:
-            # Check if record exists for safety_data
-            cur.execute("""
-                SELECT id FROM safety_data WHERE spi = %s AND reference_month = %s AND reference_year = %s
-            """, (spi, reference_month, reference_year))
-            existing_record = cur.fetchone()
-            if existing_record:
-                # Update
-                cur.execute("""
-                    UPDATE safety_data SET spi = %s, reference_month = %s, reference_year = %s
-                    WHERE id = %s
-                """, (spi, reference_month, reference_year, existing_record[0]))
-            else:
-                # Insert
-                cur.execute("""
-                    INSERT INTO safety_data (spi, reference_month, reference_year)
-                    VALUES (%s, %s, %s)
-                """, (spi, reference_month, reference_year))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"Error inserting data: {e}")
-            return f"An error occurred: {e}", 500
-
-        return redirect('/module/3')
-
-    # Recupera i dati esistenti dal database
-    try:
-        cur.execute("""
-            SELECT id, spi, reference_month, reference_year, created_at
-            FROM safety_data
-            ORDER BY created_at DESC
-        """)
-        safety_data = cur.fetchall()
-    except Exception as e:
-        print(f"Error fetching data: {e}")
-        safety_data = []
-
-    cur.close()
-    return render_template('module_3.html', safety_data=safety_data)
 
 # Route for Module 4 (CAMO Department)
 @app.route('/module/4', methods=['GET', 'POST'])
