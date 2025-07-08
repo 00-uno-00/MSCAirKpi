@@ -1,5 +1,5 @@
 from datetime import datetime
-from src.utils.db import get_db_connection, retrieve_data_db
+import src.utils.db as db
 import calendar
 
 spis = [
@@ -66,12 +66,12 @@ def process_data(data, spi_id):
     values_with_dates = [{'value': d['value'], 'entry_date': d['entry_date']} for d in data]
     rolling_average = calc_12_months_rolling_average(get_spi_by_id(spi_id)['spi_name'], get_spi_by_id(spi_id)['mode'])
     ytd_average = calc_ytd_average(values_with_dates, get_spi_by_id(spi_id)['mode'])
-    ytd_sum = calc_prev_year_sum(values_with_dates)
+    ytd_sum = calc_prev_year_sum(get_spi_by_id(spi_id)['spi_name'],values_with_dates)
     return {
         'values': values_with_dates,
-        'rolling_avg_sum': rolling_average,
-        'ytd_avg_sum': ytd_average,
-        'ytd_sum': ytd_sum
+        'rolling_avg_sum': round(rolling_average, 3) if rolling_average is not None else 0,
+        'ytd_avg_sum': round(ytd_average, 3) if ytd_average is not None else 0,
+        'ytd_sum': round(ytd_sum, 3) if ytd_sum is not None else 0
     }
 
 def calc_12_months_rolling_average(spi_name, mode):
@@ -81,13 +81,13 @@ def calc_12_months_rolling_average(spi_name, mode):
         data (list): Lista di valori numerici.
         mode (str): Modalità di calcolo della media ('avg' o 'sum').
     """
-    conn = get_db_connection()
+    conn = db.get_db_connection()
     cur = conn.cursor()
 
     dt = datetime.today()
     start_date = dt.replace(year=dt.year - 1, day=1)
 
-    data = retrieve_data_db(spi_name, start_date, dt.replace(day=calendar.monthrange(dt.year, dt.month)[1]), cur)
+    data = db.retrieve_data_db(spi_name, start_date, dt.replace(day=calendar.monthrange(dt.year, dt.month)[1]), cur)
 
     if not data:
         return 0
@@ -138,17 +138,27 @@ def calc_ytd_average(data, mode):
                 count = 0
         return total / count if count > 0 else None
 
-def calc_prev_year_sum(data):
+def calc_prev_year_sum(spi_name, data):
     """
     Calcola la somma YTD (Year To Date) per i dati forniti.
     """
     if not data:
         return []
 
+    # Look for oldest entry considered
+    oldest_entry = min(value['entry_date'] for value in data if value is not None)
+
+    # Get the total for the year previous to the oldest entry
+    db_conn = db.get_db_connection()
+    cur = db_conn.cursor()
+    start_date = oldest_entry.replace(year=oldest_entry.year - 1, month=1, day=1)
+    end_date = oldest_entry.replace(year=oldest_entry.year - 1, month=12, day=31)
+    data = db.retrieve_data_db(spi_name, start_date, end_date, cur)
+
     total = 0
 
     for value in data:
         if value is not None and value['entry_date'].year == datetime.today().year-1:
-            total += value
+            total += value['value']
 
     return total if total > 0 else 0

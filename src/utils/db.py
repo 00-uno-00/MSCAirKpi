@@ -22,20 +22,20 @@ def commit_update_data(updated_spis, conn):
             # Check if record exists for safety_data
             cur.execute("""
                 SELECT id FROM safety_data WHERE spi = %s AND entry_date = date_trunc('month', date %s)
-            """, (spi_name, datetime(year, month, 1)))
+            """, (spi_name, datetime(year, (month-1), 1)))
             existing_record = cur.fetchone()
             if existing_record:
                 # Update
                 cur.execute("""
                     UPDATE safety_data SET spi = %s, entry_date = date_trunc('month', date %s), value = %s
                     WHERE id = %s
-                """, (spi_name, datetime(year, month, 1), value, existing_record[0])) #TODO ask if user wants to overwrite
+                """, (spi_name, datetime(year, (month-1), 1), value, existing_record[0])) #TODO ask if user wants to overwrite
             else:
                 # Insert
                 cur.execute("""
                     INSERT INTO safety_data (spi, value, entry_date)
                     VALUES (%s, %s, %s)
-                """, (spi_name, value, datetime(year, month, 1)))
+                """, (spi_name, value, datetime(year, (month-1), 1)))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -50,7 +50,8 @@ def retrieve_data_db(spi_name, start_date, end_date, cur):
         start_date (datetime.date): La data di inizio del range.
         end_date (datetime.date): La data di fine del range.
     Returns:
-        list: Una lista di dizionari contenenti i valori e le date di inserimento.
+        list: Una lista di dizionari contenenti i valori e le date di inserimento, nella forma:
+              [{'value': value1, 'entry_date': date1}, ...]
     N.B. selezionando un range di un solo mese un singolo mese verra' ritornato
     """
 

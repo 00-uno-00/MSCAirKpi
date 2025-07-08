@@ -3,7 +3,6 @@ import src.utils.spis as spi_utils
 import src.utils.db as db_utils
 from datetime import datetime
 import pandas as pd
-
 ### DATA ANALYSIS
 import plotly.graph_objects as go
 
@@ -57,89 +56,43 @@ graphs_spis = [ ### Note all the SPIs need to be in the spis list to be displaye
 
 @module3_bp.route('/module/3', methods=['GET', 'POST'])
 def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!!
+    """
+    Route for the module 3, which handles the safety data.
+    """
+    # Recupera i dati esistenti dal database
+    table=get_table()
+    start_date = request.args.get('start_date', datetime.today().replace(month=1, day=1).strftime('%Y-%m-%d'))
+    
+    return render_template('SAFETY.html', table=table, start_date_value=start_date, end_date_value=datetime.today().strftime('%Y-%m-%d'))
+
+@module3_bp.route('/module/3/graphs')
+def module_3_graphs():
     conn = db_utils.get_db_connection()
     cur = conn.cursor()
-
-    if request.method == 'POST':
-        new_data = [] #buffer for one commit
-
-        # Ottieni i dati dal modulo
-        reference_month = datetime.today().month  # Usa il mese corrente come riferimento
-        reference_year = datetime.today().year  # Usa l'anno corrente come riferimento
-        for spi in spis:
-            spi_id = spi['id']
-            spi_value = request.form.get(f'{spi_id}')
-            if spi_value is not None:
-                try:
-                    spi_value = int(spi_value)
-                    if spi_value < 0:
-                        return f"Invalid value for SPI {spi_id}: Value cannot be negative", 400
-                    
-                    # Aggiungi i dati al buffer
-                    new_data.append((spi['spi_name'], spi_value, reference_month, reference_year))
-                    # perform commit
-                except ValueError:
-                    return f"Invalid value for SPI {spi_id}", 400 #TODO add a popup
-            else:
-                spi_value = None
-        # Commit all data in one go
-        # Commit the update to the database
-        db_utils.commit_update_data(new_data, conn) 
-
-        return redirect('/module/3')
-
-    # Recupera i dati esistenti dal database
-    if request.method == 'GET':
-        # Use request.args for GET parameters
-        start_date_str = request.args.get('start_date')
-        end_date_str = request.args.get('end_date')
-
-        # Requires formatting or default values
-        if start_date_str:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-        else:
-            start_date = datetime.today().replace(month=1, day=1)
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-        else:
-            end_date = datetime.today().replace(day=1)
-
-        
-
-        all_data = []
-        for spi in spis:
-            try:
-                spi_data = db_utils.retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
-                all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
-                ###
-                #id
-                #spi_name
-                #values
-                #   | spi_data = ['value', 'entry_date']
-                ###
-            except Exception as e:
-                print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
-
-        cur.close()
-        conn.close()
-
-        processed_data = []# buffer for processed data to be used in the template & graphs
-
-        for spi in all_data:
+    # Use the same date range logic as in /module/3
+    start_date = datetime.today().replace(month=1, day=1)
+    end_date = datetime.today().replace(day=1)
+    all_data = []
+    for spi in spis:
+        try:
+            spi_data = db_utils.retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
+            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'target_value': spi['target_value'],'values': spi_data})
+        except Exception as e:
+            print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
+    cur.close()
+    conn.close()
+    graphs = ""
+    for spi in all_data:
+        if spi['spi_name'] in [g['spi_name'] for g in graphs_spis]:
             spi_values = spi['values']
             processed_spi = {
                 'id': spi['id'],
                 'spi_name': spi['spi_name'],
-                'data': spi_utils.process_data(spi_values, spi['id']),
-                'target_value': spi_utils.get_spi_by_id(spi['id'])['target_value']
+                'data': spi_utils.process_data(spi_values, spi['id'])
             }
-            
-            processed_data.append(processed_spi)
-                
-
-            #graphs = interactive_plot(pd.DataFrame(processed_data[0]['data']['values']), processed_data[0]['spi_name'])
+            graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi["data"]["values"]), processed_spi["spi_name"], spi["target_value"])}</div>'
     
-        return render_template('SAFETY.html', rows=processed_data, start_date_value=start_date.strftime('%Y-%m-%d'), end_date_value=end_date.strftime('%Y-%m-%d'))
+    return graphs
 
 def interactive_plot(df, spi_name, target_value=0):
     """ 
@@ -189,31 +142,82 @@ def interactive_plot(df, spi_name, target_value=0):
     )
     return fig.to_html(full_html=True, include_plotlyjs='cdn')
 
-@module3_bp.route('/module/3/graphs')
-def module_3_graphs():
+@module3_bp.route('/module/3/save', methods=['POST'])
+def module_3_save():
+    """
+    Endpoint to save the data from the form.
+    """
+    conn = db_utils.get_db_connection()
+
+    new_data = []
+
+    # Ottieni i dati dal modulo
+    reference_month = datetime.today().month  # Usa il mese corrente come riferimento
+    reference_year = datetime.today().year  # Usa l'anno corrente come riferimento
+    for spi in spis:
+        spi_id = spi['id']
+        spi_value = request.form.get(f'{spi_id}')
+        if spi_value != '':
+                if spi_id == 2:  
+                    # For SPI 2, convert the value to a percentage
+                    spi_value = float(spi_value)
+                else:
+                    spi_value = int(spi_value)
+                
+                # Aggiungi i dati al buffer
+                new_data.append((spi['spi_name'], spi_value, reference_month, reference_year))
+                # perform commit
+        else:
+            spi_value = None
+    # Commit all data in one go
+    # Commit the update to the database
+    db_utils.commit_update_data(new_data, conn)
+
+    return "OK", 200
+
+@module3_bp.route('/module/3/get_table', methods=['GET'])
+def get_table():
+    """
+    Endpoint to retrieve the table data for the module 3.
+
+    Returns:
+        html for the table with the data for module 3.
+    """
+
     conn = db_utils.get_db_connection()
     cur = conn.cursor()
-    # Use the same date range logic as in /module/3
-    start_date = datetime.today().replace(month=1, day=1)
-    end_date = datetime.today().replace(day=1)
+
+    # Use request.args for GET parameters
+    start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d') if request.args.get('start_date') else datetime.today().replace(month=1, day=1)
+    end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d') if request.args.get('end_date') else datetime.today().replace(day=1)
+
     all_data = []
     for spi in spis:
         try:
             spi_data = db_utils.retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
-            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'target_value': spi['target_value'],'values': spi_data})
+            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
+            ###
+            #id
+            #spi_name
+            #values
+            #   | spi_data = ['value', 'entry_date']
+            ###
         except Exception as e:
             print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
+
     cur.close()
     conn.close()
-    graphs = ""
+    processed_data = []# buffer for processed data to be used in the template & graphs
+
     for spi in all_data:
-        if spi['spi_name'] in [g['spi_name'] for g in graphs_spis]:
-            spi_values = spi['values']
-            processed_spi = {
-                'id': spi['id'],
-                'spi_name': spi['spi_name'],
-                'data': spi_utils.process_data(spi_values, spi['id'])
-            }
-            graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi["data"]["values"]), processed_spi["spi_name"], spi["target_value"])}</div>'
-    
-    return graphs
+        spi_values = spi['values']
+        processed_spi = {
+            'id': spi['id'],
+            'spi_name': spi['spi_name'],
+            'data': spi_utils.process_data(spi_values, spi['id']),
+            'target_value': spi_utils.get_spi_by_id(spi['id'])['target_value']
+        }
+        
+        processed_data.append(processed_spi)
+
+    return render_template('safety_table.html', spis=spis, rows=processed_data, this_month=datetime.today().replace(month=datetime.today().month-1).strftime('%Y-%m'))
