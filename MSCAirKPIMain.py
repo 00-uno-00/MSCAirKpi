@@ -6,13 +6,18 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from src.routes import module3_routes
 from src.utils.db import get_db_connection
+import psycopg2
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a secure key here in production
 
 app.register_blueprint(module3_routes.module3_bp)
 
-DATABASE_URL = "postgresql://neondb_owner:npg_ibQE9C0cXNnZ@ep-aged-cake-a2x4wqvv-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+def get_db_connection():
+   if 'db_conn' not in g:
+       g.db_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+   return g.db_conn
 USERNAME = os.environ.get("APP_USERNAME", "testuser")
 PASSWORD = os.environ.get("APP_PASSWORD", "mscairspa")
 
