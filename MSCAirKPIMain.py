@@ -12,7 +12,7 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a s
 
 app.register_blueprint(module3_routes.module3_bp)
 
-DATABASE_URL = "postgresql://neondb_owner:npg_ibQE9C0cXNnZ@ep-aged-cake-a2x4wqvv-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 USERNAME = os.environ.get("APP_USERNAME", "testuser")
 PASSWORD = os.environ.get("APP_PASSWORD", "mscairspa")
 
