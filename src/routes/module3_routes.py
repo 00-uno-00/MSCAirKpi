@@ -61,9 +61,27 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
     """
     # Recupera i dati esistenti dal database
     table=get_table()
-    start_date = request.args.get('start_date', datetime.today().replace(month=1, day=1).strftime('%Y-%m-%d'))
+    user_agent=request.headers.get('User-Agent')
+
+    start_date = request.args.get('start_date', datetime.today().replace(month=1).strftime('%Y-%m'))
+    end_date = request.args.get('end_date', datetime.today().strftime('%Y-%m'))
     
-    return render_template('SAFETY.html', table=table, start_date_value=start_date, end_date_value=datetime.today().strftime('%Y-%m-%d'))
+    # Convert to datetime objects
+    start_date_dt = datetime.strptime(start_date, '%Y-%m')
+    end_date_dt = datetime.strptime(end_date, '%Y-%m')
+    if (
+        ('Firefox' in user_agent) or
+        ('Safari' in user_agent and 'Chrome' not in user_agent and 'Edg/' not in user_agent)
+    ):
+        start_date_value = start_date_dt.strftime('%Y-%m-%d')
+        end_date_value = end_date_dt.strftime('%Y-%m-%d')
+        date_type = 'date'
+    else:
+        start_date_value = start_date_dt.strftime('%Y-%m')
+        end_date_value = end_date_dt.strftime('%Y-%m')
+        date_type = 'month'
+
+    return render_template('SAFETY.html', table=table, start_date_value=start_date_value, end_date_value=end_date_value, date_type=date_type)
 
 @module3_bp.route('/module/3/graphs')
 def module_3_graphs():
@@ -187,9 +205,18 @@ def get_table():
     conn = db_utils.get_db_connection()
     cur = conn.cursor()
 
+
+    user_agent = request.headers.get('User-Agent')
     # Use request.args for GET parameters
-    start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d') if request.args.get('start_date') else datetime.today().replace(month=1, day=1)
-    end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d') if request.args.get('end_date') else datetime.today().replace(day=1)
+    if (
+        ('Firefox' in user_agent) or
+        ('Safari' in user_agent and 'Chrome' not in user_agent and 'Edg/' not in user_agent)
+    ):
+        start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d') if request.args.get('start_date') else datetime.today().replace(month=1, day=1)
+        end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d') if request.args.get('end_date') else datetime.today().replace(day=1)
+    else : 
+        start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m') if request.args.get('start_date') else datetime.today().replace(month=1)
+        end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m') if request.args.get('end_date') else datetime.today()
 
     all_data = []
     for spi in spis:

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const graphContainer = document.getElementById('graph-container');
     const sticky = document.getElementsByClassName('sticky-col');
     let unsavedChanges = false;
-
+    if(!window.homeBtnListenerAttached){
     openBtn.onclick = async () => {
         for (let i = 0; i < sticky.length; i++) {
             sticky[i].style.zIndex = 0;
@@ -140,28 +140,51 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    const homeBtn = document.getElementById('homeBtn');
-    homeBtn.addEventListener('click', () => {
-        const form = document.getElementById('data_form');
-        const inputs = form.querySelectorAll('input[type="text"]');
-        inputs.forEach(input => {
-            if (input.value.trim() !== '') {
-                unsavedChanges = true;
-            }
-        });
+    
+        const homeBtn = document.getElementById('homeBtn');
+        homeBtn.addEventListener('click', () => {
+            const form = document.getElementById('data_form');
+            const inputs = form.querySelectorAll('input[type="text"]');
+            inputs.forEach(input => {
+                if (input.value.trim() !== '') {
+                    unsavedChanges = true;
+                }
+            });
 
-        if (unsavedChanges) {
-            if (!confirm('You have unsaved changes. Are you sure you want to go home?')) {
-                return;
+            if (unsavedChanges) {
+                if (!confirm('You have unsaved changes. Are you sure you want to go home?')) {
+                    return;
+                }
             }
-        }
-        window.location.href = '/';
-    });
+            window.location.href = '/';
+
+        });
+        window.homeBtnListenerAttached = true; // Flag to prevent multiple attachments
+    }
 
     
-    const inputs = document.querySelectorAll('input[type="text"]');
-    inputs.forEach(input => {
-        input.onblur = async () => {
+    //const inputs = document.querySelectorAll('input[type="text"]');
+    //inputs.forEach(input => {
+    //    input.onblur = async () => {
+    //        const form = document.getElementById('data_form');
+    //        const formData = new FormData(form);
+//
+    //        const res = await fetch('/module/3/save', {
+    //            method: 'POST',
+    //            body: formData
+    //        });
+//
+    //        if (!res.ok) {
+    //            console.error('Failed to save data');
+    //        } else {
+    //            unsavedChanges = false; // Reset unsaved changes flag after successful save
+    //            console.log('Data saved successfully');
+    //        }
+    //    }
+    //});
+
+        document.getElementById('data_form').addEventListener('blur', async function(event) {
+        if (event.target.matches('input[type="text"]')) {
             const form = document.getElementById('data_form');
             const formData = new FormData(form);
 
@@ -173,10 +196,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!res.ok) {
                 console.error('Failed to save data');
             } else {
-                unsavedChanges = false; // Reset unsaved changes flag after successful save
+                unsavedChanges = false;
                 console.log('Data saved successfully');
             }
         }
-    });
+    }, true); // Use capture phase for blur
 
 });
