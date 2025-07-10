@@ -1,6 +1,7 @@
 from flask import Blueprint,render_template, request, redirect
 import src.utils.spis as spi_utils
 import src.utils.db as db_utils
+import src.utils.table as table_utils
 from datetime import datetime
 import pandas as pd
 ### DATA ANALYSIS
@@ -9,19 +10,23 @@ import plotly.graph_objects as go
 
 module3_bp = Blueprint('module3', __name__)
 #!!! IDS USED FOR IDENTIFICATION WITHIN THE TABLE NOT TO IDENTIFY SPI CLASS !!!
+graph_map ={ 
+    "tozeroy": "≥"
+}
+
 spis = [
-    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum"},
-    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": 95, "mode": "avg"},
-]
-"""{ "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed" },
-    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives" },
-    { "id": 5, "spi_name": "Nr of Accident" },
-    { "id": 6, "spi_name": "Nr of Serious Incident" },
-    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)" },
-    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)" },
-    { "id": 9, "spi_name": "Nr of Safety Reports (Voluntary & confidential) per month" },
-    { "id": 10, "spi_name": "Nr of Risk Assessments perfomed per month" },
-    { "id": 11, "spi_name": "Nr of Hazards identified per month" },
+    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "sign": "tozeroy" },]
+"""
+    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": "≥95", "mode": "avg"},
+    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed", "target_value": "≥1", "mode": "sum"},
+    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives", "target_value": "≥ 1", "mode": "sum"},
+    { "id": 5, "spi_name": "Nr of Accident", "target_value": "≥ 1", "mode": "sum"},
+    { "id": 6, "spi_name": "Nr of Serious Incident", "target_value": "<1", "mode": "avg"},
+    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)", "target_value": "<1", "mode": "avg"},
+    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)", "target_value": "<1 ", "mode": "avg" },
+    { "id": 9, "spi_name": "Nr of Safety Reports (Voluntary & confidential) per month", "target_value": "≤2 per 1000FHs", "mode": "avg"},
+    { "id": 10, "spi_name": "Nr of Risk Assessments perfomed per month", "target_value": "≤1 per 1000FHs", "mode": "avg"},
+    { "id": 11, "spi_name": "Nr of Hazards identified per month", "target_value": "≤1 per 1000FHs", "mode": "avg"},
     { "id": 12, "spi_name": "Nr of new Mitigations validated and implemented per month" },
     { "id": 13, "spi_name": "Nr. of Safety Bulletin published" },
     { "id": 14, "spi_name": "Nr. of Safety Flash published" },
@@ -47,8 +52,9 @@ spis = [
     { "id": 34, "spi_name": "Nr of Reduced margin to manoeuvrability speed per month (Source: FDM)" },
     { "id": 35, "spi_name": "Nr of TCAS/ACAS Resolution Advisory per month (Source: FDM)" },
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
-    { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }"""
-
+    { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }
+]
+"""
 graphs_spis = [ ### Note all the SPIs need to be in the spis list to be displayed in the graphs
     {"spi_name": "Nr. of Safety Review Board perfomed" },
     {"spi_name": "% of Recommendations implemented (YTD)" },
@@ -60,7 +66,7 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
     Route for the module 3, which handles the safety data.
     """
     # Recupera i dati esistenti dal database
-    table=get_table()
+    table=table_utils.get_table()
     user_agent=request.headers.get('User-Agent')
 
     start_date = request.args.get('start_date', datetime.today().replace(month=1).strftime('%Y-%m'))
@@ -84,35 +90,28 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
     return render_template('SAFETY.html', table=table, start_date_value=start_date_value, end_date_value=end_date_value, date_type=date_type)
 
 @module3_bp.route('/module/3/graphs')
-def module_3_graphs():
-    conn = db_utils.get_db_connection()
-    cur = conn.cursor()
-    # Use the same date range logic as in /module/3
-    start_date = datetime.today().replace(month=1, day=1)
-    end_date = datetime.today().replace(day=1)
-    all_data = []
-    for spi in spis:
-        try:
-            spi_data = db_utils.retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
-            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'target_value': spi['target_value'],'values': spi_data})
-        except Exception as e:
-            print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
-    cur.close()
-    conn.close()
+def module_3_graphs(processed_data):
+    """
+    args:
+        processed_data (list): List of processed SPI + data to generate the graphs with. NB: the spis are already filtered and processed.
+    Returns:
+        graphs (str): html for the graphs.
+    """
+    
     graphs = ""
-    for spi in all_data:
-        if spi['spi_name'] in [g['spi_name'] for g in graphs_spis]:
-            spi_values = spi['values']
-            processed_spi = {
-                'id': spi['id'],
-                'spi_name': spi['spi_name'],
-                'data': spi_utils.process_data(spi_values, spi['id'])
-            }
-            graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi["data"]["values"]), processed_spi["spi_name"], spi["target_value"])}</div>'
+    for processed_spi in processed_data:
+        processed_spi = {
+            'id': processed_spi['id'],
+            'spi_name': processed_spi['spi_name'],
+            'data': processed_spi['data'],
+            'target_value': processed_spi['target_value'],
+            'sign': graph_map.get(processed_spi['sign'], processed_spi['sign'])
+        }
+        graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi["data"]["values"]), processed_spi["spi_name"], processed_spi["target_value"], processed_spi["sign"])}</div>'
     
     return graphs
 
-def interactive_plot(df, spi_name, target_value=0):
+def interactive_plot(df, spi_name, target_value=0, fill='tozeroy'):
     """ 
         Generate an interactive plot for the given DataFrame and SPI name.
     """
@@ -155,7 +154,8 @@ def interactive_plot(df, spi_name, target_value=0):
             mode='lines',
             name='Target Value',
             line=dict(color='red', dash='dash'),
-            showlegend=True
+            showlegend=True,
+            fill=fill
         )
     )
     return fig.to_html(full_html=True, include_plotlyjs='cdn')
@@ -192,59 +192,3 @@ def module_3_save():
     db_utils.commit_update_data(new_data, conn)
 
     return "OK", 200
-
-@module3_bp.route('/module/3/get_table', methods=['GET'])
-def get_table():
-    """
-    Endpoint to retrieve the table data for the module 3.
-
-    Returns:
-        html for the table with the data for module 3.
-    """
-
-    conn = db_utils.get_db_connection()
-    cur = conn.cursor()
-
-
-    user_agent = request.headers.get('User-Agent')
-    # Use request.args for GET parameters
-    if (
-        ('Firefox' in user_agent) or
-        ('Safari' in user_agent and 'Chrome' not in user_agent and 'Edg/' not in user_agent)
-    ):
-        start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d') if request.args.get('start_date') else datetime.today().replace(month=1, day=1)
-        end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d') if request.args.get('end_date') else datetime.today().replace(day=1)
-    else : 
-        start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m') if request.args.get('start_date') else datetime.today().replace(month=1)
-        end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m') if request.args.get('end_date') else datetime.today()
-
-    all_data = []
-    for spi in spis:
-        try:
-            spi_data = db_utils.retrieve_data_db(spi['spi_name'], datetime.date(start_date), datetime.date(end_date), cur)
-            all_data.append({'id': spi['id'], 'spi_name': spi['spi_name'], 'values': spi_data})
-            ###
-            #id
-            #spi_name
-            #values
-            #   | spi_data = ['value', 'entry_date']
-            ###
-        except Exception as e:
-            print(f"Error fetching data for SPI {spi['spi_name']}: {e}")
-
-    cur.close()
-    conn.close()
-    processed_data = []# buffer for processed data to be used in the template & graphs
-
-    for spi in all_data:
-        spi_values = spi['values']
-        processed_spi = {
-            'id': spi['id'],
-            'spi_name': spi['spi_name'],
-            'data': spi_utils.process_data(spi_values, spi['id']),
-            'target_value': spi_utils.get_spi_by_id(spi['id'])['target_value']
-        }
-        
-        processed_data.append(processed_spi)
-
-    return render_template('safety_table.html', spis=spis, rows=processed_data, this_month=datetime.today().replace(month=datetime.today().month-1).strftime('%Y-%m'))

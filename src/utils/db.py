@@ -45,7 +45,7 @@ def commit_update_data(updated_spis, conn):
             print(f"Error inserting data: {e}")
             return f"An error occurred: {e}", 500
 
-def retrieve_data_db(spi_name, start_date, end_date, cur):
+def retrieve_data_db(spi_name, start_date, end_date, cur, table):
     """
     Recupera i dati dal database per un determinato SPI.
     Args:
@@ -62,11 +62,11 @@ def retrieve_data_db(spi_name, start_date, end_date, cur):
         # Query per ottenere i dati per gli SPIs specificati 
         cur.execute(
             """
-            SELECT value, entry_date FROM safety_data
+            SELECT value, entry_date FROM %s
             WHERE spi = %s AND entry_date BETWEEN date_trunc('month', date %s) AND date_trunc('month', date %s)
             ORDER BY entry_date
             """,
-            (spi_name, start_date, end_date)
+            (table, spi_name, start_date, end_date)
         )
         data = cur.fetchall()
         # Return both value and entry_date as a list of dicts

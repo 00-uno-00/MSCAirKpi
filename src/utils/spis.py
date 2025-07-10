@@ -50,9 +50,14 @@ def get_spi_by_id(spi_id):
 
 ### DATA PROCESSING FUNCTIONS ###
 
-def process_data(data, spi_id):
+def process_data(data, spi_id):#TODO rifare tutto (fa tante chiamate a db quando i dati sono gia presenti)
     """
     Processa i dati per calcolare le medie mobili e le somme YTD per un singolo SPI.
+    Args:
+        data (list): Lista di dizionari contenenti i dati SPI, con chiavi 'value' e 'entry_date'.
+        spi_id (int): ID dello SPI per cui calcolare i dati.(se sum o avg)
+    returns:
+        dict: Dizionario contenente i valori elaborati, la media mobile su 12 mesi
     """
     if not data:
         return {

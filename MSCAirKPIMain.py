@@ -4,13 +4,14 @@ from threading import Timer
 import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from src.routes import module3_routes
+from src.routes import module3_routes, module1_OCC_routes
 from src.utils.db import get_db_connection
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a secure key here in production
 
 app.register_blueprint(module3_routes.module3_bp)
+app.register_blueprint(module1_OCC_routes.module1_OCC_)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 USERNAME = os.environ.get("APP_USERNAME", "testuser")

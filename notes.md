@@ -1,0 +1,32 @@
+- formattazione condizionale
+- warning di diverso tipo 
+- tab con tutti i grafici
+- year end 2025
+- grafico con valori negli anni
+    - OCC 6
+        - [ ] Flight time (I-MSCA) - block hours (HH:MM) - COM flights only
+        - [ ] Flight cycles  (I-MSCA) - COM flights only
+        - [ ] Flight Hours per cycle
+        - [ ] Regularity
+        - [ ] Departure Punctuality
+        - [ ] Aircraft daily utilization per month
+    - Safety
+        - [ ] Operational Incidents (MOR) - monthly rate
+        - [ ] Technical Incidents (MOR) - monthly rate
+        - [ ] Safety Reports (Voluntary & confidential) - monthly rate
+        - [ ] Hazard Identification per month
+    - CAMO
+        - [ ] MEL 1 - Rate of total MEL opened per 1000FH, per A/C per month 
+        - [ ] Defects (MAREPS) - monthly rate
+        - [ ] Defects (PIREPS) - monthly rate
+    - FLIGHT OPS
+        - [ ] Robustness Pairing changes
+        - [ ] FDP exceedance
+    - GROUND OPS
+        - [ ]Incorrect A/C loading
+        - [ ]Incorrect Payload weighing 
+    - CREW TNG
+        - [ ] FSTD Recurrent Checking
+        - [ ] Licence/Operator Proficency Check
+- pagina per ingestione dei dati precedenti
+- download csv globale da pagina grafici

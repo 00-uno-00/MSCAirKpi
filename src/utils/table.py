@@ -1,0 +1,38 @@
+from flask import Blueprint,render_template, request, redirect
+import src.utils.spis as spi_utils
+import src.utils.db as db_utils
+from datetime import datetime
+import pandas as pd
+### DATA ANALYSIS
+import plotly.graph_objects as go
+
+
+module3_bp = Blueprint('/table', __name__)
+@module3_bp.route('/get_table/<module>', methods=['GET'])
+@module3_bp.login_required
+def get_table(all_data, graph_map):#this should not be exposed 
+    """
+    Endpoint to retrieve the table data for the selected module.
+    Args:
+        all_data (list): List of dictionaries containing SPI data.
+        graph_map (dict): Mapping of SPI signs to their graphical representations.
+
+    Returns:
+        html for the table with the data for the selected module.
+    """
+
+    processed_data = []# buffer for processed data to be used in the template & graphs
+
+    for spi in all_data:
+        spi_values = spi['values']
+        processed_spi = {
+            'id': spi['id'],
+            'spi_name': spi['spi_name'],
+            'data': spi_utils.process_data(spi_values, spi['id']),
+            'target_value': spi_utils.get_spi_by_id(spi['id'])['target_value'],
+            'sign': graph_map.get(spi['sign'], spi['sign'])  
+        }
+        
+        processed_data.append(processed_spi)
+
+    return render_template('safety_table.html', rows=processed_data, this_month=datetime.today().replace(month=datetime.today().month-1).strftime('%Y-%m'))
