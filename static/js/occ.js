@@ -1,5 +1,27 @@
 document.addEventListener('DOMContentLoaded', function () {
     if (!window.homeBtnListenerAttached) {
+        //TODO route per aircraft
+        //TODO trigger automatic operations on flightcycle update
+        const num = document.getElementById("Flight cycles COM flights only");
+        const den = document.getElementById("Flight time block hours (HH:MM) - COM flights only");
+        const result = document.getElementById("Flight hours per cycle");
+        if (num && den && result) {
+            num.addEventListener('input', () => {
+                if (num.value && den.value) {
+                    result.value = (parseFloat(den.value) / parseFloat(num.value)).toFixed(2);
+                } else {
+                    result.value = '';
+                }
+            });
+            den.addEventListener('input', () => {
+                if (num.value && den.value) {
+                    result.value = (parseFloat(den.value) / parseFloat(num.value)).toFixed(2);
+                } else {
+                    result.value = '';
+                }
+            });
+        }
+
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
         startDateInput.onchange = async () => {

@@ -5,9 +5,6 @@ from datetime import datetime
 import plotly.graph_objects as go
 
 
-module3_bp = Blueprint('/table', __name__)
-@module3_bp.route('/get_table', methods=['GET'])
-#@module3_bp.login_required
 def get_table(all_data, graph_map):#this should not be exposed 
     """
     Endpoint to retrieve the table data for the selected module.

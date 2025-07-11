@@ -4,7 +4,7 @@ import calendar
 
 spis = [
     { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "table": "safety_data", "sign": "tozeroy"},
-    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": "≥95", "mode": "avg", "table": "safety_data", "sign": "tozeroy"},
+    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": 95, "mode": "avg", "table": "safety_data", "sign": "tozeroy"},
     { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed" },
     { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives" },
     { "id": 5, "spi_name": "Nr of Accident" },
@@ -40,11 +40,12 @@ spis = [
     { "id": 35, "spi_name": "Nr of TCAS/ACAS Resolution Advisory per month (Source: FDM)" },
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
     { "id": 37, "spi_name": "Nr of of fatigue report form received per month" },
-    { "id": 38, "spi_name": "Flight time -- block hours (HH:MM) - COM flights only", "target_value": 5000, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
-    { "id": 39, "spi_name": "Flight cycles -- COM flights only" },
-    { "id": 40, "spi_name": "Flight hours per cycle"},
-    { "id": 41, "spi_name": "Regularity" },
-    { "id": 42, "spi_name": "Departure Punctuality" },
+    { "id": 38, "spi_name": "Flight time block hours (HH:MM) - COM flights only_", "target_value": 5000, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 39, "spi_name": "Flight cycles COM flights only_", "target_value": 475, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 40, "spi_name": "Flight hours per cycle", "target_value": 8, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 41, "spi_name": "Regularity", "target_value": 95, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 42, "spi_name": "Departure Punctuality","target_value": 75, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 43, "spi_name": "Aircraft daily utilization per month", "target_value": 475, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
 ]
 
 def get_spi_by_id(spi_id):

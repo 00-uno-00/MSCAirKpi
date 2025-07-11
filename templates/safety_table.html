@@ -47,11 +47,11 @@
             {% else %}
             <td>{{row.sign}}{{row.target_value}}</td>
             {% endif %}
-            <td><input type="text" name="{{ row.id }}" id="{{ row.spi_name}}"></td>
+            <td><input type="text" name="{{ row.id }}" id="{{ row.spi_name }}"></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/safety.js') }}"></script><!-- TODO check if the blur action works after the table is reloaded -->
+<script src="{{ url_for('static', filename='js/safety.js') }}"></script>

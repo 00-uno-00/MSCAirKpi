@@ -4,8 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeBtn = document.getElementById('closeBtn');
     const graphContainer = document.getElementById('graph-container');
     const sticky = document.getElementsByClassName('sticky-col');
-    let unsavedChanges = false;
-    if (!window.homeBtnListenerAttached) {
+    if (!window.openBtnListenerAttached) {
         openBtn.onclick = async () => {
             for (let i = 0; i < sticky.length; i++) {
                 sticky[i].style.zIndex = 0;
@@ -41,5 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 graphContainer.innerHTML = '';
             }
         }
+
+        window.openBtnListenerAttached = true;  // Mark listener as attached
     }
 });
