@@ -80,7 +80,7 @@ def landing_page():
     return render_template('landing_page.html')
 
 # --- Route for Module 1 (OCC Department) ---
-@app.route('/module/1', methods=['GET', 'POST'])
+#@app.route('/module/1', methods=['GET', 'POST'])
 def module_1():
     conn = get_db_connection()
     cur = conn.cursor()

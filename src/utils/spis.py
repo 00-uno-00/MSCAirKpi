@@ -4,8 +4,8 @@ import calendar
 
 spis = [
     { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "table": "safety_data", "sign": "tozeroy"},
-]
-"""{ "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed" },
+    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": "≥95", "mode": "avg", "table": "safety_data", "sign": "tozeroy"},
+    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed" },
     { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives" },
     { "id": 5, "spi_name": "Nr of Accident" },
     { "id": 6, "spi_name": "Nr of Serious Incident" },
@@ -39,7 +39,13 @@ spis = [
     { "id": 34, "spi_name": "Nr of Reduced margin to manoeuvrability speed per month (Source: FDM)" },
     { "id": 35, "spi_name": "Nr of TCAS/ACAS Resolution Advisory per month (Source: FDM)" },
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
-    { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }"""
+    { "id": 37, "spi_name": "Nr of of fatigue report form received per month" },
+    { "id": 38, "spi_name": "Flight time -- block hours (HH:MM) - COM flights only", "target_value": 5000, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 39, "spi_name": "Flight cycles -- COM flights only" },
+    { "id": 40, "spi_name": "Flight hours per cycle"},
+    { "id": 41, "spi_name": "Regularity" },
+    { "id": 42, "spi_name": "Departure Punctuality" },
+]
 
 def get_spi_by_id(spi_id):
     return spis[spi_id - 1] if 0 < spi_id <= len(spis) else None
@@ -52,6 +58,12 @@ def get_spi_by_name(spi_name):
     Returns:
         dict: Dizionario contenente i dettagli dello SPI, o None se non trovato.
     """
+    if spi_name.__contains__('I-MSC'):
+        start_index = spi_name.index('I-MSC') - 1
+        end_index = start_index + 8
+        spi_name = spi_name[:start_index] + spi_name[end_index:] 
+        # very stupid and doesn't work for a/c names different than I-MSCX
+
     for spi in spis:
         if spi['spi_name'] == spi_name:
             return spi

@@ -5,9 +5,6 @@ import src.utils.table as table_utils
 from src.utils.graphs import interactive_plot
 from datetime import datetime
 import pandas as pd
-### DATA ANALYSIS
-import plotly.graph_objects as go
-
 
 module3_bp = Blueprint('module3', __name__)
 #!!! IDS USED FOR IDENTIFICATION WITHIN THE TABLE NOT TO IDENTIFY SPI CLASS !!!
@@ -71,7 +68,7 @@ graphs_spis = [ ### Note all the SPIs need to be in the spis list to be displaye
 ###
 
 @module3_bp.route('/module/3', methods=['GET', 'POST'])
-def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!!
+def module_3():#!!!!ID USATO PER CLASSE DI SPI SOLO LOCALMENTE !!!!
     """
     Route for the module 3, which handles the safety data.
     """
