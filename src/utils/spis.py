@@ -3,8 +3,7 @@ import src.utils.db as db
 import calendar
 
 spis = [
-    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum"},
-    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": 95, "mode": "avg"},
+    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "table": "safety_data", "sign": "tozeroy"},
 ]
 """{ "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed" },
     { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives" },
@@ -43,14 +42,24 @@ spis = [
     { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }"""
 
 def get_spi_by_id(spi_id):
+    return spis[spi_id - 1] if 0 < spi_id <= len(spis) else None
+
+def get_spi_by_name(spi_name):
+    """
+    Recupera lo SPI corrispondente al nome fornito.
+    Args:
+        spi_name (str): Il nome dello SPI da cercare.
+    Returns:
+        dict: Dizionario contenente i dettagli dello SPI, o None se non trovato.
+    """
     for spi in spis:
-        if spi['id'] == spi_id:
+        if spi['spi_name'] == spi_name:
             return spi
     return None
 
 ### DATA PROCESSING FUNCTIONS ###
 
-def process_data(data, spi_id):#TODO rifare tutto (fa tante chiamate a db quando i dati sono gia presenti)
+def process_data(data, spi_id):
     """
     Processa i dati per calcolare le medie mobili e le somme YTD per un singolo SPI.
     Args:
@@ -68,10 +77,10 @@ def process_data(data, spi_id):#TODO rifare tutto (fa tante chiamate a db quando
         }
 
     # values_with_dates: list of dicts with value and entry_date, like in all_data
-    values_with_dates = [{'value': d['value'], 'entry_date': d['entry_date']} for d in data]
-    rolling_average = calc_12_months_rolling_average(get_spi_by_id(spi_id)['spi_name'], get_spi_by_id(spi_id)['mode'])
+    values_with_dates = [{'value': d['value'], 'entry_date': (d['entry_date'])} for d in data]
+    rolling_average = calc_12_months_rolling_average(get_spi_by_id(spi_id), get_spi_by_id(spi_id)['mode'])
     ytd_average = calc_ytd_average(values_with_dates, get_spi_by_id(spi_id)['mode'])
-    ytd_sum = calc_prev_year_sum(get_spi_by_id(spi_id)['spi_name'],values_with_dates)
+    ytd_sum = calc_prev_year_sum(get_spi_by_id(spi_id),values_with_dates)
     return {
         'values': values_with_dates,
         'rolling_avg_sum': round(rolling_average, 3) if rolling_average is not None else 0,
@@ -79,7 +88,7 @@ def process_data(data, spi_id):#TODO rifare tutto (fa tante chiamate a db quando
         'ytd_sum': round(ytd_sum, 3) if ytd_sum is not None else 0
     }
 
-def calc_12_months_rolling_average(spi_name, mode):
+def calc_12_months_rolling_average(spi, mode):
     """
     Calcola la media mobile su 12 mesi per i dati forniti.
     Args:
@@ -92,7 +101,7 @@ def calc_12_months_rolling_average(spi_name, mode):
     dt = datetime.today()
     start_date = dt.replace(year=dt.year - 1, day=1)
 
-    data = db.retrieve_data_db(spi_name, start_date, dt.replace(day=calendar.monthrange(dt.year, dt.month)[1]), cur)
+    data = db.get_data_spi(spi['spi_name'], start_date, end_date=dt.replace(day=calendar.monthrange(dt.year, dt.month)[1]), cur=cur, table=spi['table'])
 
     if not data:
         return 0
@@ -143,7 +152,7 @@ def calc_ytd_average(data, mode):
                 count = 0
         return total / count if count > 0 else None
 
-def calc_prev_year_sum(spi_name, data):
+def calc_prev_year_sum(spi, data):
     """
     Calcola la somma YTD (Year To Date) per i dati forniti.
     """
@@ -151,14 +160,14 @@ def calc_prev_year_sum(spi_name, data):
         return []
 
     # Look for oldest entry considered
-    oldest_entry = min(value['entry_date'] for value in data if value is not None)
+    oldest_entry = min(entry['entry_date'] for entry in data if entry is not None)
 
     # Get the total for the year previous to the oldest entry
     db_conn = db.get_db_connection()
     cur = db_conn.cursor()
     start_date = oldest_entry.replace(year=oldest_entry.year - 1, month=1, day=1)
     end_date = oldest_entry.replace(year=oldest_entry.year - 1, month=12, day=31)
-    data = db.retrieve_data_db(spi_name, start_date, end_date, cur)
+    data = db.get_data_spi(spi['spi_name'], start_date, end_date, cur, spi['table'])
 
     total = 0
 

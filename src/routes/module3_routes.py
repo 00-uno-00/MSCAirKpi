@@ -1,7 +1,8 @@
-from flask import Blueprint,render_template, request, redirect
+from flask import Blueprint,render_template, request, session
 import src.utils.spis as spi_utils
 import src.utils.db as db_utils
 import src.utils.table as table_utils
+from src.utils.graphs import interactive_plot
 from datetime import datetime
 import pandas as pd
 ### DATA ANALYSIS
@@ -60,13 +61,38 @@ graphs_spis = [ ### Note all the SPIs need to be in the spis list to be displaye
     {"spi_name": "% of Recommendations implemented (YTD)" },
 ]
 
+###
+# id
+# spi_name
+# data
+#   | data = ['value', 'entry_date']
+# target_value
+# sign
+###
+
 @module3_bp.route('/module/3', methods=['GET', 'POST'])
 def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!!
     """
     Route for the module 3, which handles the safety data.
     """
     # Recupera i dati esistenti dal database
-    table=table_utils.get_table()
+    all_data = []
+    cur = db_utils.get_db_connection().cursor()
+    for spi in spis:
+        spi_name = spi['spi_name']
+        # Retrieve data from the database for each SPI
+        data = db_utils.get_data_spi(spi_name, start_date=datetime.today().replace(month=1, day=1), end_date=datetime.today(), cur=cur, table='safety_data')
+        all_data.append({
+            'id': spi['id'],
+            'spi_name': spi_name,
+            'data': data,
+            'target_value': spi['target_value'],
+            'sign': spi.get('sign', 'tozeroy')  # Default to 'tozeroy' if not specified
+        })
+    
+    session['all_data'] = all_data
+
+    table=table_utils.get_table(all_data, graph_map)
     user_agent=request.headers.get('User-Agent')
 
     start_date = request.args.get('start_date', datetime.today().replace(month=1).strftime('%Y-%m'))
@@ -81,84 +107,49 @@ def module_3():#!!!!ID USATO PER INDIVISUARE ISTANZA DI SPI NON CLASSE DI SPI!!!
     ):
         start_date_value = start_date_dt.strftime('%Y-%m-%d')
         end_date_value = end_date_dt.strftime('%Y-%m-%d')
-        date_type = 'date'
     else:
-        start_date_value = start_date_dt.strftime('%Y-%m')
-        end_date_value = end_date_dt.strftime('%Y-%m')
-        date_type = 'month'
-
-    return render_template('SAFETY.html', table=table, start_date_value=start_date_value, end_date_value=end_date_value, date_type=date_type)
+        start_date_value = start_date_dt.strftime('%Y-%m-%d')
+        end_date_value = end_date_dt.strftime('%Y-%m-%d')
+    
+    return render_template('SAFETY.html', table=table, start_date_value=start_date_value, end_date_value=end_date_value)
 
 @module3_bp.route('/module/3/graphs')
-def module_3_graphs(processed_data):
+def module_3_graphs():
     """
     args:
         processed_data (list): List of processed SPI + data to generate the graphs with. NB: the spis are already filtered and processed.
     Returns:
         graphs (str): html for the graphs.
     """
-    
+    processed_data = session.get('all_data', [])
+    # convert the date from cookie to datetime
+    if not processed_data:
+        return "No data available", 404
+    for spi in processed_data:
+        for entry in spi['data']:
+            if isinstance(entry['entry_date'], str):
+                entry['entry_date'] = datetime.strptime(entry['entry_date'], '%a, %d %b %Y %H:%M:%S %Z')
+
+
     graphs = ""
     for processed_spi in processed_data:
+        # values are string by default messing up the graphs
+        for entry in processed_spi['data']:
+                if isinstance(entry['value'], str):
+                    entry['value'] = float(entry['value']) if entry['value'] else 0.0
+
         processed_spi = {
             'id': processed_spi['id'],
             'spi_name': processed_spi['spi_name'],
             'data': processed_spi['data'],
             'target_value': processed_spi['target_value'],
-            'sign': graph_map.get(processed_spi['sign'], processed_spi['sign'])
+            'sign': processed_spi['sign']
         }
-        graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi["data"]["values"]), processed_spi["spi_name"], processed_spi["target_value"], processed_spi["sign"])}</div>'
+        graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi['data']), processed_spi['spi_name'], processed_spi['target_value'], processed_spi['sign'])}</div>'
     
     return graphs
 
-def interactive_plot(df, spi_name, target_value=0, fill='tozeroy'):
-    """ 
-        Generate an interactive plot for the given DataFrame and SPI name.
-    """
 
-    fig = go.Figure()
-    
-    fig.update_layout(
-        title= f'{spi_name} - over time',
-        xaxis_title='Entry Date',
-        yaxis_title='SPI Value',
-        template='plotly_white'
-    )
-
-    df['entry_date'] = pd.to_datetime(df['entry_date'])  # Ensure entry_date is in datetime format
-
-    min_date = df['entry_date'].min()
-    max_date = df['entry_date'].max()
-    # Set interval (e.g., every 1 month)
-    fig.update_xaxes(
-        range=[min_date, max_date],
-        dtick="M1", 
-        tickformat="%Y-%m"
-    )
-    # Graph
-    fig.add_trace(
-        go.Scatter(
-            x=df['entry_date'],
-            y=df['value'],
-            mode='lines+markers',
-            name='SPI Value',
-            line=dict(color='blue', width=2),
-            marker=dict(size=5)
-        )
-    )
-    # target
-    fig.add_trace(
-        go.Scatter(
-            x=[min_date, max_date],
-            y=[target_value, target_value],
-            mode='lines',
-            name='Target Value',
-            line=dict(color='red', dash='dash'),
-            showlegend=True,
-            fill=fill
-        )
-    )
-    return fig.to_html(full_html=True, include_plotlyjs='cdn')
 
 @module3_bp.route('/module/3/save', methods=['POST'])
 def module_3_save():
@@ -192,3 +183,32 @@ def module_3_save():
     db_utils.commit_update_data(new_data, conn)
 
     return "OK", 200
+
+@module3_bp.route('/module/3/get_table', methods=['GET'])
+def module_3_table():
+    """
+    Endpoint to retrieve the table data for the module 3, also updates all_data.
+    Returns:
+        html for the table with the data for the module 3.
+    """
+
+    # Recupera i dati esistenti dal database
+    cur = db_utils.get_db_connection().cursor()
+
+    user_agent=request.headers.get('User-Agent')
+    if (
+        ('Firefox' in user_agent) or
+        ('Safari' in user_agent and 'Chrome' not in user_agent and 'Edg/' not in user_agent)
+    ):
+        start_date = request.args.get('start_date', datetime.today().replace(month=1, day=1).strftime('%Y-%m-%d'))
+        end_date = request.args.get('end_date', datetime.today().strftime('%Y-%m-%d'))
+    else:
+        start_date = request.args.get('start_date', datetime.today().replace(month=1, day=1))
+        end_date = request.args.get('end_date', datetime.today())
+    
+    all_data=db_utils.get_data_table('safety_data', start_date, end_date, cur=cur)
+
+    cur.close()
+    db_utils.get_db_connection().close()
+
+    return table_utils.get_table(all_data, graph_map)

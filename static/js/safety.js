@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Clear container and create iframe
             table_container.innerHTML = html;
         } catch (e) {
-            table_container.innerHTML = 'Failed to load graph.';
+            table_container.innerHTML = 'Failed to load table.';
             console.error(e);
         }
     };
@@ -96,13 +96,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         //perform get request to update the table
         try {
-            const res = await fetch('/module/3/get_table');
+            const url = `/module/3/get_table?start_date=${startDate}&end_date=${endDate}`;
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Network response was not ok');
             const html = await res.text();
             // Clear container and create iframe
             table_container.innerHTML = html;
         } catch (e) {
-            table_container.innerHTML = 'Failed to load graph.';
+            table_container.innerHTML = 'Failed to load table.';
             console.error(e);
         }
     };

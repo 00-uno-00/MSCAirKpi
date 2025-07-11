@@ -1,15 +1,13 @@
-from flask import Blueprint,render_template, request, redirect
+from flask import Blueprint,render_template
 import src.utils.spis as spi_utils
-import src.utils.db as db_utils
 from datetime import datetime
-import pandas as pd
 ### DATA ANALYSIS
 import plotly.graph_objects as go
 
 
 module3_bp = Blueprint('/table', __name__)
-@module3_bp.route('/get_table/<module>', methods=['GET'])
-@module3_bp.login_required
+@module3_bp.route('/get_table', methods=['GET'])
+#@module3_bp.login_required
 def get_table(all_data, graph_map):#this should not be exposed 
     """
     Endpoint to retrieve the table data for the selected module.
@@ -24,7 +22,7 @@ def get_table(all_data, graph_map):#this should not be exposed
     processed_data = []# buffer for processed data to be used in the template & graphs
 
     for spi in all_data:
-        spi_values = spi['values']
+        spi_values = spi['data']
         processed_spi = {
             'id': spi['id'],
             'spi_name': spi['spi_name'],
@@ -32,7 +30,6 @@ def get_table(all_data, graph_map):#this should not be exposed
             'target_value': spi_utils.get_spi_by_id(spi['id'])['target_value'],
             'sign': graph_map.get(spi['sign'], spi['sign'])  
         }
-        
         processed_data.append(processed_spi)
 
     return render_template('safety_table.html', rows=processed_data, this_month=datetime.today().replace(month=datetime.today().month-1).strftime('%Y-%m'))

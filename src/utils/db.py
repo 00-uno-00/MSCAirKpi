@@ -3,6 +3,7 @@ DATABASE_URL = "postgresql://neondb_owner:npg_ibQE9C0cXNnZ@ep-aged-cake-a2x4wqvv
 import psycopg2
 from flask import g
 from datetime import datetime
+import src.utils.spis as spi_utils
 import os
 
 #DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -32,7 +33,7 @@ def commit_update_data(updated_spis, conn):
                 cur.execute("""
                     UPDATE safety_data SET spi = %s, entry_date = date_trunc('month', date %s), value = %s
                     WHERE id = %s
-                """, (spi_name, datetime(year, (month-1), 1), value, existing_record[0])) #TODO ask if user wants to overwrite
+                """, (spi_name, datetime(year, (month-1), 1), value, existing_record[0]))
             else:
                 # Insert
                 cur.execute("""
@@ -45,7 +46,7 @@ def commit_update_data(updated_spis, conn):
             print(f"Error inserting data: {e}")
             return f"An error occurred: {e}", 500
 
-def retrieve_data_db(spi_name, start_date, end_date, cur, table):
+def get_data_spi(spi_name, start_date, end_date, cur, table):
     """
     Recupera i dati dal database per un determinato SPI.
     Args:
@@ -60,17 +61,67 @@ def retrieve_data_db(spi_name, start_date, end_date, cur, table):
 
     try:
         # Query per ottenere i dati per gli SPIs specificati 
-        cur.execute(
-            """
-            SELECT value, entry_date FROM %s
+        query = f"""
+            SELECT value, entry_date FROM {table}
             WHERE spi = %s AND entry_date BETWEEN date_trunc('month', date %s) AND date_trunc('month', date %s)
             ORDER BY entry_date
-            """,
-            (table, spi_name, start_date, end_date)
+            """
+        cur.execute(
+            query,
+            (spi_name, start_date, end_date)
         )
         data = cur.fetchall()
         # Return both value and entry_date as a list of dicts
-        return [{'value': d[0], 'entry_date': d[1]} for d in data]
+        return [{'value':  d[0], 'entry_date': d[1]} for d in data]
     except Exception as e:
         print(f"Error fetching data for SPI {spi_name}: {e}")
         return []
+    
+def get_data_table(table, start_date, end_date, cur):
+    """
+    Recupera i dati dal database per una tabella specifica.
+    Args:
+        table (str): Il nome della tabella da cui recuperare i dati.
+        start_date (datetime.date): La data di inizio del range.
+        end_date (datetime.date): La data di fine del range.
+    Returns:
+        list: Una lista di dizionari contenenti i valori e le date di inserimento, nella forma:
+              [{'spi_name': spi_name, 'data': {'value': value1, 'entry_date': date1}}, ...]
+    """
+    try:
+        query = f"""
+            SELECT spi, 
+                   json_agg(json_build_object('value', value, 'entry_date', entry_date) ORDER BY entry_date) AS data
+            FROM {table}
+            WHERE entry_date BETWEEN date_trunc('month', date %s) AND date_trunc('month', date %s)
+            GROUP BY spi
+            ORDER BY spi
+            """
+        cur.execute(query, (start_date, end_date))
+        data = cur.fetchall()
+        output = []
+        for d in data:
+            spi = spi_utils.get_spi_by_name(d[0])
+            if spi:
+                # Parse the JSON array and convert entry_date to datetime
+                data_list = d[1]
+                for entry in data_list:
+                    if isinstance(entry['entry_date'], str):
+                        entry['entry_date'] = datetime.strptime(entry['entry_date'], '%Y-%m-%d').date()
+                                        
+                output.append({
+                    'id': spi['id'],
+                    'spi_name': d[0],
+                    'data': data_list,
+                    'target': spi['target_value'],
+                    'sign': spi['sign']
+                })
+            else :
+                print(f"SPI {d[0]} not found in SPI list.")
+        
+        return output
+    except Exception as e:
+        print(f"Error fetching data from table {table}: {e}")
+        return []
+    finally:
+        cur.close()
