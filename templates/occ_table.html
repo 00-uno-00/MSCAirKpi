@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/safety.css') }}">
+
+
+<table class="table table-hover table-sm table-bordered" border="1" id="myTable">
+    <thead>
+        <tr>
+            <th class="sticky-col">Name</th>
+            {% for value in rows[0]['data']['values'] %}
+            <th>{{ value.entry_date }}</th>
+            {% endfor %}
+            <th class="sticky-col">Rolling 12-months Aver./Sum(as applicable)</th>
+            <th class="sticky-col">YTD Aver./Sum (as applicable)</th>
+            <th>Year End 2024</th>
+            <th>TARGET&nbsp;(12 months of operations)</th>
+            <th>{{ this_month }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr name="id_{{ row.id }}">
+            <td class="sticky-col">{{ row.spi_name }}</td>
+            {% for value in row['data']['values'] %}
+                {% if row.id != 39 %}
+                    <td>{{ value.value|minutes_to_hhmm }}</td>
+                {% else %}
+                    <td>{{ value.value }}</td>
+                {% endif %}
+            {% endfor %}
+            {% if row.id == 41 or row.id == 42 %}
+                <td class="sticky-col">{{ row.data.rolling_avg_sum }}%</td>
+            {% else %}
+                {% if row.id != 39 %}
+                    <td class="sticky-col">{{ row.data.rolling_avg_sum|minutes_to_hhmm }}</td>
+                {% else %}
+                    <td class="sticky-col">{{ row.data.rolling_avg_sum }}</td>
+                {% endif %}
+            {% endif %}
+            {% if row.id == 41 or row.id == 42 %}
+                <td class="sticky-col">{{ row.data.ytd_avg_sum }}%</td>
+            {% else %}
+                {% if row.id != 39 %}
+                    <td class="sticky-col">{{ row.data.ytd_avg_sum|minutes_to_hhmm }}</td>
+                {% else %}
+                    <td class="sticky-col">{{ row.data.ytd_avg_sum }}</td>
+                {% endif %}
+            {% endif %}
+            {% if row.id == 41 or row.id == 42 %}
+                <td class="sticky-col">{{ row.data.ytd_sum }}%</td>
+            {% else %}
+                {% if row.id != 39 %}
+                    <td class="sticky-col">{{ row.data.ytd_sum|minutes_to_hhmm }}</td>
+                {% else %}
+                <td class="sticky-col">{{ row.data.ytd_sum }}</td>
+                {% endif %}
+            {% endif %}
+            {% if row.id == 41 or row.id == 42 %}
+                <td>≥{{row.sign}}{{row.target_value}}%</td>
+            {% else %}
+                <td>{{row.sign}}{{row.target_value}}</td>
+            {% endif %}
+            <td>
+                {% if row.id == 40 or row.id == 43 %}
+                    Automatic Value
+                {% else %}
+                    <input type="text" name="{{ row.id }}" id="{{ row.spi_name }}">
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/safety.js') }}"></script>

@@ -40,8 +40,8 @@ spis = [
     { "id": 35, "spi_name": "Nr of TCAS/ACAS Resolution Advisory per month (Source: FDM)" },
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
     { "id": 37, "spi_name": "Nr of of fatigue report form received per month" },
-    { "id": 38, "spi_name": "Flight time block hours (HH:MM) - COM flights only_", "target_value": 5000, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
-    { "id": 39, "spi_name": "Flight cycles COM flights only_", "target_value": 475, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 38, "spi_name": "Flight time -- block hours (HH:MM) - COM flights only", "target_value": 5000, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 39, "spi_name": "Flight cycles -- COM flights only", "target_value": 475, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 40, "spi_name": "Flight hours per cycle", "target_value": 8, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 41, "spi_name": "Regularity", "target_value": 95, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 42, "spi_name": "Departure Punctuality","target_value": 75, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
@@ -72,7 +72,7 @@ def get_spi_by_name(spi_name):
 
 ### DATA PROCESSING FUNCTIONS ###
 
-def process_data(data, spi_id):
+def process_data(data, spi_id, spi_name=None):
     """
     Processa i dati per calcolare le medie mobili e le somme YTD per un singolo SPI.
     Args:
@@ -91,9 +91,9 @@ def process_data(data, spi_id):
 
     # values_with_dates: list of dicts with value and entry_date, like in all_data
     values_with_dates = [{'value': d['value'], 'entry_date': (d['entry_date'])} for d in data]
-    rolling_average = calc_12_months_rolling_average(get_spi_by_id(spi_id), get_spi_by_id(spi_id)['mode'])
+    rolling_average = calc_12_months_rolling_average(spi_name, get_spi_by_id(spi_id)['mode'], get_spi_by_id(spi_id)['table'])
     ytd_average = calc_ytd_average(values_with_dates, get_spi_by_id(spi_id)['mode'])
-    ytd_sum = calc_prev_year_sum(get_spi_by_id(spi_id),values_with_dates)
+    ytd_sum = calc_prev_year_sum(spi_name, values_with_dates, get_spi_by_id(spi_id)['table'])
     return {
         'values': values_with_dates,
         'rolling_avg_sum': round(rolling_average, 3) if rolling_average is not None else 0,
@@ -101,7 +101,7 @@ def process_data(data, spi_id):
         'ytd_sum': round(ytd_sum, 3) if ytd_sum is not None else 0
     }
 
-def calc_12_months_rolling_average(spi, mode):
+def calc_12_months_rolling_average(spi_name, mode, table):#TODO valutare scambio di spi con nome direttamente
     """
     Calcola la media mobile su 12 mesi per i dati forniti.
     Args:
@@ -114,7 +114,7 @@ def calc_12_months_rolling_average(spi, mode):
     dt = datetime.today()
     start_date = dt.replace(year=dt.year - 1, day=1)
 
-    data = db.get_data_spi(spi['spi_name'], start_date, end_date=dt.replace(day=calendar.monthrange(dt.year, dt.month)[1]), cur=cur, table=spi['table'])
+    data = db.get_data_spi(spi_name, start_date, end_date=dt.replace(day=calendar.monthrange(dt.year, dt.month)[1]), cur=cur, table=table)
 
     if not data:
         return 0
@@ -163,9 +163,9 @@ def calc_ytd_average(data, mode):
             else:
                 total = 0
                 count = 0
-        return total / count if count > 0 else None
+        return total if count > 0 else None
 
-def calc_prev_year_sum(spi, data):
+def calc_prev_year_sum(spi_name, data, table):
     """
     Calcola la somma YTD (Year To Date) per i dati forniti.
     """
@@ -180,7 +180,7 @@ def calc_prev_year_sum(spi, data):
     cur = db_conn.cursor()
     start_date = oldest_entry.replace(year=oldest_entry.year - 1, month=1, day=1)
     end_date = oldest_entry.replace(year=oldest_entry.year - 1, month=12, day=31)
-    data = db.get_data_spi(spi['spi_name'], start_date, end_date, cur, spi['table'])
+    data = db.get_data_spi(spi_name, start_date, end_date, cur, table)
 
     total = 0
 

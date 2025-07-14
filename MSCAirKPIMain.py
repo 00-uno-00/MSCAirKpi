@@ -6,6 +6,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from src.routes import module3_routes, module1_OCC_routes
 from src.utils.db import get_db_connection
+from src.utils.time_utils import minutes_to_hhmm
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a secure key here in production
@@ -13,31 +14,11 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a s
 app.register_blueprint(module3_routes.module3_bp)
 app.register_blueprint(module1_OCC_routes.module1_OCC_)
 
+app.jinja_env.filters['minutes_to_hhmm'] = minutes_to_hhmm
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 USERNAME = os.environ.get("APP_USERNAME", "testuser")
 PASSWORD = os.environ.get("APP_PASSWORD", "mscairspa")
-
-# --- Utility functions ---
-
-def safe_int(val, default=0):
-    try:
-        return int(val)
-    except (TypeError, ValueError):
-        return default
-
-def safe_float(val, default=0.0):
-    try:
-        return float(val)
-    except (TypeError, ValueError):
-        return default
-
-def time_to_minutes(h, m):
-    return safe_int(h) * 60 + safe_int(m)
-
-def minutes_to_hhmm(minutes):
-    hours = minutes // 60
-    mins = minutes % 60
-    return f"{str(hours).zfill(2)}:{str(mins).zfill(2)}"
 
 @app.teardown_appcontext
 def close_db_connection(exception):

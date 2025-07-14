@@ -5,7 +5,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 
 
-def get_table(all_data, graph_map):#this should not be exposed 
+def get_table(all_data, graph_map, table):#this should not be exposed 
     """
     Endpoint to retrieve the table data for the selected module.
     Args:
@@ -23,10 +23,10 @@ def get_table(all_data, graph_map):#this should not be exposed
         processed_spi = {
             'id': spi['id'],
             'spi_name': spi['spi_name'],
-            'data': spi_utils.process_data(spi_values, spi['id']),
-            'target_value': spi_utils.get_spi_by_id(spi['id'])['target_value'],
+            'data': spi_utils.process_data(spi_values, spi['id'], spi['spi_name']),
+            'target_value': spi['target_value'],
             'sign': graph_map.get(spi['sign'], spi['sign'])  
         }
         processed_data.append(processed_spi)
 
-    return render_template('safety_table.html', rows=processed_data, this_month=datetime.today().replace(month=datetime.today().month-1).strftime('%Y-%m'))
+    return render_template(table, rows=processed_data, this_month=datetime.today().replace(month=datetime.today().month-1).strftime('%Y-%m'))

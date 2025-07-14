@@ -11,7 +11,7 @@ module3_bp = Blueprint('module3', __name__)
 graph_map ={ 
     "tozeroy": "≥"
 }
-
+#TODO fix home button
 spis = [
     { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "sign": "tozeroy" },]
 """
@@ -89,7 +89,7 @@ def module_3():#!!!!ID USATO PER CLASSE DI SPI SOLO LOCALMENTE !!!!
     
     session['all_data'] = all_data
 
-    table=table_utils.get_table(all_data, graph_map)
+    table=table_utils.get_table(all_data, graph_map, 'safety_table.html')
     user_agent=request.headers.get('User-Agent')
 
     start_date = request.args.get('start_date', datetime.today().replace(month=1).strftime('%Y-%m'))
@@ -177,7 +177,7 @@ def module_3_save():
             spi_value = None
     # Commit all data in one go
     # Commit the update to the database
-    db_utils.commit_update_data(new_data, conn)
+    db_utils.commit_update_data(new_data, conn, 'safety_data')
 
     return "OK", 200
 

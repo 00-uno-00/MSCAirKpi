@@ -14,7 +14,7 @@ def get_db_connection():
     return g.db_conn
 
 
-def commit_update_data(updated_spis, conn):
+def commit_update_data(updated_spis, conn, table):
     """
     Inserisce o aggiorna i dati nel database per una lista di spi.
     """
@@ -23,21 +23,21 @@ def commit_update_data(updated_spis, conn):
     for spi_name, value, month, year in updated_spis:
         # Inserisci i dati nel database
         try:
-            # Check if record exists for safety_data
-            cur.execute("""
-                SELECT id FROM safety_data WHERE spi = %s AND entry_date = date_trunc('month', date %s)
+            # Check if record exists for {table}
+            cur.execute(f"""
+                SELECT id FROM {table} WHERE spi = %s AND entry_date = date_trunc('month', date %s)
             """, (spi_name, datetime(year, (month-1), 1)))
             existing_record = cur.fetchone()
             if existing_record:
                 # Update
-                cur.execute("""
-                    UPDATE safety_data SET spi = %s, entry_date = date_trunc('month', date %s), value = %s
+                cur.execute(f"""
+                    UPDATE {table} SET spi = %s, entry_date = date_trunc('month', date %s), value = %s
                     WHERE id = %s
                 """, (spi_name, datetime(year, (month-1), 1), value, existing_record[0]))
             else:
                 # Insert
-                cur.execute("""
-                    INSERT INTO safety_data (spi, value, entry_date)
+                cur.execute(f"""
+                    INSERT INTO {table} (spi, value, entry_date)
                     VALUES (%s, %s, %s)
                 """, (spi_name, value, datetime(year, (month-1), 1)))
             conn.commit()
@@ -113,7 +113,7 @@ def get_data_table(table, start_date, end_date, cur):
                     'id': spi['id'],
                     'spi_name': d[0],
                     'data': data_list,
-                    'target': spi['target_value'],
+                    'target_value': spi['target_value'],
                     'sign': spi['sign']
                 })
             else :
