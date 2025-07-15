@@ -9,8 +9,9 @@ def get_table(all_data, graph_map, table):#this should not be exposed
     """
     Endpoint to retrieve the table data for the selected module.
     Args:
-        all_data (list): List of dictionaries containing SPI data.
+        all_data (list): List of dictionaries containing SPI data. CHECK all_data structure.
         graph_map (dict): Mapping of SPI signs to their graphical representations.
+        table (str): The name of the template to render the table.
 
     Returns:
         html for the table with the data for the selected module.

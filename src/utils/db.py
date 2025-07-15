@@ -17,6 +17,8 @@ def get_db_connection():
 def commit_update_data(updated_spis, conn, table):
     """
     Inserisce o aggiorna i dati nel database per una lista di spi.
+    
+    NB: Assumes that the table has columns: spi, value, entry_date. The reference month and year are used to determine the entry_date and are shifted by one month back.
     """
     cur = conn.cursor()
 

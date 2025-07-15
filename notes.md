@@ -1,8 +1,8 @@
-- formattazione condizionale
-- warning di diverso tipo 
-- tab con tutti i grafici
-- year end 2025
-- grafico con valori negli anni
+- [ ]formattazione condizionale
+- [ ]warning di diverso tipo 
+- [ ]tab con tutti i grafici
+- [ ]year end 2025
+- [ ]grafico con valori negli anni
     - OCC 6
         - [ ] Flight time (I-MSCA) - block hours (HH:MM) - COM flights only
         - [ ] Flight cycles  (I-MSCA) - COM flights only
@@ -28,5 +28,5 @@
     - CREW TNG
         - [ ] FSTD Recurrent Checking
         - [ ] Licence/Operator Proficency Check
-- pagina per ingestione dei dati precedenti
-- download csv globale da pagina grafici
+- [ ]pagina per ingestione dei dati precedenti
+- [ ] download csv globale da pagina grafici

@@ -164,7 +164,7 @@ def module_3_save():
         spi_id = spi['id']
         spi_value = request.form.get(f'{spi_id}')
         if spi_value != '':
-                if spi_id == 2:  
+                if spi_id == 2:
                     # For SPI 2, convert the value to a percentage
                     spi_value = float(spi_value)
                 else:
