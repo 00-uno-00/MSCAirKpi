@@ -5,26 +5,30 @@ import src.utils.table as table_utils
 from src.utils.graphs import interactive_plot
 from datetime import datetime
 import pandas as pd
+from flask import make_response
+import json
 
 module3_bp = Blueprint('module3', __name__)
 #!!! IDS USED FOR IDENTIFICATION WITHIN THE TABLE NOT TO IDENTIFY SPI CLASS !!!
 graph_map ={ 
-    "tozeroy": "≥"
+    "tozeroy": "≥",
+    "toinfy": "<"
 }
-#TODO fix home button
+
 spis = [
-    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "sign": "tozeroy" },]
+    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": {2}, "mode": "sum", "sign": "tozeroy" },
+    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": {95}, "mode": "avg", "sign": "tozeroy" },
+    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed", "target_value": {1}, "mode": "sum", "sign": "tozeroy" },
+    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives", "target_value": {1}, "mode": "sum", "sign": "tozeroy" },
+    { "id": 5, "spi_name": "Nr of Accident", "target_value": {1}, "mode": "sum", "sign": "tozeroy" },
+    { "id": 6, "spi_name": "Nr of Serious Incident", "target_value": {1}, "mode": "avg", "sign": "toinfy" },
+    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)", "target_value": {1, 1.7, 2.4, 3.1}, "mode": "avg", "sign": "toinfy" },
+    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)", "target_value": {1, 2.7, 3.4, 4.1}, "mode": "avg", "sign": "toinfy" },
+   ]
 """
-    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": "≥95", "mode": "avg"},
-    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed", "target_value": "≥1", "mode": "sum"},
-    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives", "target_value": "≥ 1", "mode": "sum"},
-    { "id": 5, "spi_name": "Nr of Accident", "target_value": "≥ 1", "mode": "sum"},
-    { "id": 6, "spi_name": "Nr of Serious Incident", "target_value": "<1", "mode": "avg"},
-    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)", "target_value": "<1", "mode": "avg"},
-    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)", "target_value": "<1 ", "mode": "avg" },
-    { "id": 9, "spi_name": "Nr of Safety Reports (Voluntary & confidential) per month", "target_value": "≤2 per 1000FHs", "mode": "avg"},
-    { "id": 10, "spi_name": "Nr of Risk Assessments perfomed per month", "target_value": "≤1 per 1000FHs", "mode": "avg"},
-    { "id": 11, "spi_name": "Nr of Hazards identified per month", "target_value": "≤1 per 1000FHs", "mode": "avg"},
+    { "id": 9, "spi_name": "Nr of Safety Reports (Voluntary & confidential) per month", "target_value": "≤2 per 1000FHs", "mode": "avg" },
+    { "id": 10, "spi_name": "Nr of Risk Assessments perfomed per month", "target_value": "≤1 per 1000FHs", "mode": "avg" },
+    { "id": 11, "spi_name": "Nr of Hazards identified per month", "target_value": "≤1 per 1000FHs", "mode": "avg" },
     { "id": 12, "spi_name": "Nr of new Mitigations validated and implemented per month" },
     { "id": 13, "spi_name": "Nr. of Safety Bulletin published" },
     { "id": 14, "spi_name": "Nr. of Safety Flash published" },
@@ -51,11 +55,12 @@ spis = [
     { "id": 35, "spi_name": "Nr of TCAS/ACAS Resolution Advisory per month (Source: FDM)" },
     { "id": 36, "spi_name": "Nr. of COM flights captured by FDM per month" },
     { "id": 37, "spi_name": "Nr of of fatigue report form received per month" }
-]
-"""
+]"""
+
 graphs_spis = [ ### Note all the SPIs need to be in the spis list to be displayed in the graphs
     {"spi_name": "Nr. of Safety Review Board perfomed" },
     {"spi_name": "% of Recommendations implemented (YTD)" },
+    {"spi_name": "Nr of Operational Incidents (MOR)"}
 ]
 
 ###
@@ -79,17 +84,35 @@ def module_3():#!!!!ID USATO PER CLASSE DI SPI SOLO LOCALMENTE !!!!
         spi_name = spi['spi_name']
         # Retrieve data from the database for each SPI
         data = db_utils.get_data_spi(spi_name, start_date=datetime.today().replace(month=1, day=1), end_date=datetime.today(), cur=cur, table='safety_data')
+        target_value = spi.get('target_value', None)
+        if isinstance(target_value, set):
+            target_value = sorted(target_value)[0] if target_value else None #needs to set the base target 
         all_data.append({
             'id': spi['id'],
             'spi_name': spi_name,
             'data': data,
-            'target_value': spi['target_value'],
+            'target_value': target_value,
             'sign': spi.get('sign', 'tozeroy')  # Default to 'tozeroy' if not specified
         })
-    
-    session['all_data'] = all_data
 
     table=table_utils.get_table(all_data, graph_map, 'safety_table.html')
+
+    for spi in all_data:
+        # retrieve target_value from the spis list
+        spi_info = spi_utils.get_spi_by_id(spi['id'])
+        spi['target_value'] =  list(spi_info['target_value']) if spi_info else None
+
+    session['all_data'] = all_data 
+
+    resp = make_response()
+
+    resp.set_cookie('spis', json.dumps(graphs_spis))  # Store the SPIs in a cookie for later use
+
+    for spi in graphs_spis:
+        target_value = spi_utils.get_spi_by_name(spi['spi_name'])['target_value']
+        if isinstance(target_value, list) and len(target_value) > 1:
+            resp.set_cookie(spi['spi_name'], str(spi_utils.get_spi_by_name(spi['spi_name'])['target_value']))
+
     user_agent=request.headers.get('User-Agent')
 
     start_date = request.args.get('start_date', datetime.today().replace(month=1).strftime('%Y-%m'))
@@ -108,7 +131,8 @@ def module_3():#!!!!ID USATO PER CLASSE DI SPI SOLO LOCALMENTE !!!!
         start_date_value = start_date_dt.strftime('%Y-%m-%d')
         end_date_value = end_date_dt.strftime('%Y-%m-%d')
     
-    return render_template('SAFETY.html', table=table, start_date_value=start_date_value, end_date_value=end_date_value)
+    resp.set_data(render_template('SAFETY.html', table=table, start_date_value=start_date_value, end_date_value=end_date_value))
+    return resp
 
 @module3_bp.route('/module/3/graphs')
 def module_3_graphs():
@@ -131,18 +155,19 @@ def module_3_graphs():
     graphs = ""
     for processed_spi in processed_data:
         # values are string by default messing up the graphs
-        for entry in processed_spi['data']:
+        if processed_spi['spi_name'] in [spi['spi_name'] for spi in graphs_spis]:
+            for entry in processed_spi['data']:
                 if isinstance(entry['value'], str):
                     entry['value'] = float(entry['value']) if entry['value'] else 0.0
 
-        processed_spi = {
-            'id': processed_spi['id'],
-            'spi_name': processed_spi['spi_name'],
-            'data': processed_spi['data'],
-            'target_value': processed_spi['target_value'],
-            'sign': processed_spi['sign']
-        }
-        graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi['data']), processed_spi['spi_name'], processed_spi['target_value'], processed_spi['sign'])}</div>'
+            processed_spi = {#TODO useful?
+                'id': processed_spi['id'],
+                'spi_name': processed_spi['spi_name'],
+                'data': processed_spi['data'],
+                'target_value': processed_spi['target_value'],
+                'sign': processed_spi['sign']
+            }
+            graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi['data']), processed_spi['spi_name'], processed_spi['target_value'], processed_spi['sign'])}</div>'
     
     return graphs
 

@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     if (!window.homeBtnListenerAttached) {
-        //TODO route per aircraft
         //TODO trigger automatic operations on flightcycle update
-
+        let unsavedChanges = false;
         const aircraftsDropdown = document.getElementById('aircraft'); // replace with your dropdown's actual id
         const aircraftOptions = Array.from(aircraftsDropdown.options).map(option => option.value);
         aircraftsDropdown.addEventListener('change', (event) => {

@@ -1,5 +1,5 @@
-- [ ]formattazione condizionale
-- [ ]warning di diverso tipo 
+- [x]formattazione condizionale
+- [x]warning di diverso tipo 
 - [ ]tab con tutti i grafici
 - [ ]year end 2025
 - [ ]grafico con valori negli anni
@@ -28,5 +28,5 @@
     - CREW TNG
         - [ ] FSTD Recurrent Checking
         - [ ] Licence/Operator Proficency Check
-- [ ]pagina per ingestione dei dati precedenti
+- [ ] pagina per ingestione dei dati precedenti
 - [ ] download csv globale da pagina grafici

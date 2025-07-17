@@ -8,9 +8,8 @@ from datetime import datetime
 import calendar
 ### DATA ANALYSIS
 import plotly.graph_objects as go
-import json
+
 module1_OCC_ = Blueprint('module1_OCC_', __name__)
-# TODO CONSIDERARE SE FARE TABELLE SPECIFICHE PER SEZIONE
 SPIS = [
     { "id": 38, "spi_name": "Flight time -- block hours (HH:MM) - COM flights only", "target_value": 5000, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 39, "spi_name": "Flight cycles -- COM flights only", "target_value": 475, "mode": "sum", "table": "occ_flight_data", "sign": "tozeroy"},
@@ -19,6 +18,7 @@ SPIS = [
     { "id": 42, "spi_name": "Departure Punctuality --","target_value": 75, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 43, "spi_name": "Aircraft daily utilization per month --", "target_value": 475, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"}
 ]
+
 graph_map ={ 
     "tozeroy": "≥"
 }
@@ -128,7 +128,7 @@ def auto_values(flight_cycles_data, flight_time_data):
     return [flight_hours_per_cycle, ac_daily_utilization]
 
 @module1_OCC_.route('/module/1/save/<spi_name>', methods=['POST'])
-def save_data(spi_name=None):#we pass an spi_name if we need to save a single spi
+def save_data(spi_name=None):
     """
     Save the data to the database.
     """

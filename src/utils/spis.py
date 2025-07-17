@@ -3,14 +3,14 @@ import src.utils.db as db
 import calendar
 
 spis = [
-    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "table": "safety_data", "sign": "tozeroy"},
-    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": 95, "mode": "avg", "table": "safety_data", "sign": "tozeroy"},
-    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed" },
-    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives" },
-    { "id": 5, "spi_name": "Nr of Accident" },
-    { "id": 6, "spi_name": "Nr of Serious Incident" },
-    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)" },
-    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)" },
+    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": [2], "mode": "sum", "table": "safety_data", "sign": "tozeroy" },
+    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": [95], "mode": "avg", "table": "safety_data", "sign": "tozeroy" },
+    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed", "target_value": [1], "mode": "sum", "table": "safety_data", "sign": "tozeroy" },
+    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives", "target_value": [1], "mode": "sum", "table": "safety_data", "sign": "tozeroy" },
+    { "id": 5, "spi_name": "Nr of Accident", "target_value": [1], "mode": "sum", "table": "safety_data", "sign": "tozeroy" },
+    { "id": 6, "spi_name": "Nr of Serious Incident", "target_value": [1], "mode": "avg", "table": "safety_data", "sign": "toinfy" },
+    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)", "target_value": [1, 1.7, 2.4, 3.1], "mode": "avg", "table": "safety_data", "sign": "toinfy" },
+    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)", "target_value": [1, 2.7, 3.4, 4.1], "mode": "avg", "table": "safety_data", "sign": "toinfy" },
     { "id": 9, "spi_name": "Nr of Safety Reports (Voluntary & confidential) per month" },
     { "id": 10, "spi_name": "Nr of Risk Assessments perfomed per month" },
     { "id": 11, "spi_name": "Nr of Hazards identified per month" },
@@ -101,7 +101,7 @@ def process_data(data, spi_id, spi_name=None):
         'ytd_sum': round(ytd_sum, 3) if ytd_sum is not None else 0
     }
 
-def calc_12_months_rolling_average(spi_name, mode, table):#TODO valutare scambio di spi con nome direttamente
+def calc_12_months_rolling_average(spi_name, mode, table):
     """
     Calcola la media mobile su 12 mesi per i dati forniti.
     Args:

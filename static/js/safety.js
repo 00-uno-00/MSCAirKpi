@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     if (!window.homeBtnListenerAttached) {
+        let unsavedChanges = false;
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
         startDateInput.onchange = async () => {

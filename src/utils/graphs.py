@@ -1,7 +1,8 @@
 import pandas as pd
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
-def interactive_plot(df, spi_name, target_value=0, fill='tozeroy'):
+def interactive_plot(df, spi_name, target_value=[], fill='tozeroy'):
     """ 
         Generate an interactive plot for the given DataFrame and SPI name.
     """
@@ -37,15 +38,35 @@ def interactive_plot(df, spi_name, target_value=0, fill='tozeroy'):
         )
     )
     # target
-    fig.add_trace(
-        go.Scatter(
-            x=[min_date, max_date],
-            y=[target_value, target_value],
-            mode='lines',
-            name='Target Value',
-            line=dict(color='red', dash='dash'),
-            showlegend=True,
-            fill=fill
+    if isinstance(target_value, list) and len(target_value) > 1:
+        colors = get_color_scale(len(target_value))
+        for idx, value in enumerate(target_value):
+            color = f'rgba({int(colors[idx][0]*255)},{int(colors[idx][1]*255)},{int(colors[idx][2]*255)},1)'
+            fig.add_trace(
+                go.Scatter(
+                    x=[min_date, max_date],
+                    y=[value, value],
+                    mode='lines',
+                    name='Target Value'+ f' {value}',
+                    line=dict(color=color, width=2, dash='dash')
+                )
+            )
+    else:
+        fig.add_trace(
+            go.Scatter(
+                x=[min_date, max_date],
+                y=[target_value, target_value],
+                mode='lines',
+                name='Target Value',
+                line=dict(color='red', width=2, dash='dash')
+            )
         )
-    )
     return fig.to_html(full_html=True, include_plotlyjs='cdn')
+
+def get_color_scale(n):
+    # Returns n colors from green to red
+    cmap = plt.get_cmap('RdYlGn')
+    out = []
+    for i in range(n):
+        out.append(cmap(i/(n-1 if n > 1 else 1)))
+    return out[::-1] 
