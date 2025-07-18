@@ -127,3 +127,18 @@ def get_data_table(table, start_date, end_date, cur):
         return []
     finally:
         cur.close()
+
+def login_user(email, password):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT * FROM users WHERE email = %s AND password = %s
+        """, (email, password))
+        user = cur.fetchone()
+        return user
+    except Exception as e:
+        print(f"Error logging in user: {e}")
+        return None
+    finally:
+        cur.close()

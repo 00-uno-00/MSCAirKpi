@@ -1,6 +1,6 @@
 - [x]formattazione condizionale
 - [x]warning di diverso tipo 
-- [ ]login
+- [x]login
 - [ ]tab con tutti i grafici
 - [x]year end 2025
 - [ ]grafico con valori negli anni

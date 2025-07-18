@@ -57,6 +57,9 @@
     </header>
     <main class="text-center max-w-4xl mx-auto p-8">
         <h1 class="text-3xl md:text-4xl font-bold mb-6">MSC Air - Safety Performance Indicator</h1>
+        {% if error %}
+            <div class="error" style="color: red;">{{ error }}</div>
+        {% endif %}
         <p class="text-lg mb-8">Welcome to MSC Air KPI Performance Indicator App. Select your department to start inserting data.</p>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-6" name="department-buttons">
             <button onclick="window.location.href='/module/1'">OCC</button>

@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from src.routes import module3_routes, module1_OCC_routes
-from src.utils.db import get_db_connection
+from src.utils.db import get_db_connection, login_user
 from src.utils.time_utils import minutes_to_hhmm
 from src.utils.table import fill_max
 
@@ -19,8 +19,6 @@ app.jinja_env.filters['minutes_to_hhmm'] = minutes_to_hhmm
 app.jinja_env.filters['fill_max'] = fill_max
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-USERNAME = os.environ.get("APP_USERNAME", "testuser")
-PASSWORD = os.environ.get("APP_PASSWORD", "mscairspa")
 
 @app.teardown_appcontext
 def close_db_connection(exception):
@@ -33,13 +31,15 @@ def close_db_connection(exception):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
-        if username == USERNAME and password == PASSWORD:
+        user = login_user(email, password)
+        if user:
             session['logged_in'] = True
+            session['access_level'] = user[3]
             return redirect(url_for('intro_page'))
         else:
-            return render_template('html/login.html', error='Invalid credentials')
+            return render_template('login.html', error="Invalid email or password")
     return render_template('login.html')
 
 @app.route('/logout')
@@ -49,9 +49,25 @@ def logout():
 
 @app.before_request
 def require_login():
+    # Only check for module routes
+    if request.endpoint not in ['login', 'static'] and session.get('logged_in'):
+        path_parts = request.path.strip('/').split('/')
+        # Check if the path is like /module/<number>
+        if len(path_parts) >= 2 and path_parts[0] == 'module':
+            try:
+                module_num = int(path_parts[1])
+            except ValueError:
+                return redirect(url_for('login'))
+            access_level = session.get('access_level')
+            # Allow access if admin (0) or matches module number
+            if access_level == 0 or access_level == module_num:
+                return  # Access granted
+            # Access denied: show popup
+            return render_template('landing_page.html', error="Access Denied: You do not have permission to access this module.")
+    # If not logged in, redirect to login page
     if request.endpoint not in ['login', 'static'] and not session.get('logged_in'):
         return redirect(url_for('login'))
-    
+#
 # Route for the Intro Page
 @app.route('/')
 def intro_page():
