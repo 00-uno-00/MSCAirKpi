@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(html => {
                     const tableContainer = document.getElementById('main-table');
                     tableContainer.innerHTML = html;
+                    if (typeof formatEntries === 'function') formatEntries();
+                    if (typeof formatYearFinals === 'function') formatYearFinals();
                 })
 
         });
@@ -43,6 +45,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const html = await res.text();
                 // Clear container and create iframe
                 table_container.innerHTML = html;
+                if (typeof formatEntries === 'function') formatEntries();
+                if (typeof formatYearFinals === 'function') formatYearFinals();
             } catch (e) {
                 table_container.innerHTML = 'Failed to load table.';
                 console.error(e);
@@ -75,6 +79,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const html = await res.text();
                 // Clear container and create iframe
                 table_container.innerHTML = html;
+                if (typeof formatEntries === 'function') formatEntries();
+                if (typeof formatYearFinals === 'function') formatYearFinals();
             } catch (e) {
                 table_container.innerHTML = 'Failed to load table.';
                 console.error(e);

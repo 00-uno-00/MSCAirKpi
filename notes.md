@@ -1,15 +1,16 @@
 - [x]formattazione condizionale
 - [x]warning di diverso tipo 
+- [ ]login
 - [ ]tab con tutti i grafici
-- [ ]year end 2025
+- [x]year end 2025
 - [ ]grafico con valori negli anni
     - OCC 6
-        - [ ] Flight time (I-MSCA) - block hours (HH:MM) - COM flights only
-        - [ ] Flight cycles  (I-MSCA) - COM flights only
-        - [ ] Flight Hours per cycle
-        - [ ] Regularity
-        - [ ] Departure Punctuality
-        - [ ] Aircraft daily utilization per month
+        - [x] Flight time (I-MSCA) - block hours (HH:MM) - COM flights only
+        - [x] Flight cycles  (I-MSCA) - COM flights only
+        - [x] Flight Hours per cycle
+        - [x] Regularity
+        - [x] Departure Punctuality
+        - [x] Aircraft daily utilization per month
     - Safety
         - [ ] Operational Incidents (MOR) - monthly rate
         - [ ] Technical Incidents (MOR) - monthly rate

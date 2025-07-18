@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+
+    startDateInput.addEventListener('change', () => {
+        formatEntries();
+    });
+    endDateInput.addEventListener('change', () => {
+        formatEntries();
+    });
+    
     formatEntries();
     formatYearFinals();
 });

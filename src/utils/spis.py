@@ -72,7 +72,7 @@ def get_spi_by_name(spi_name):
 
 ### DATA PROCESSING FUNCTIONS ###
 
-def process_data(data, spi_id, spi_name=None):
+def process_data(data, spi_id, spi_name=None, max_entries=0):
     """
     Processa i dati per calcolare le medie mobili e le somme YTD per un singolo SPI.
     Args:
@@ -90,7 +90,13 @@ def process_data(data, spi_id, spi_name=None):
         }
 
     # values_with_dates: list of dicts with value and entry_date, like in all_data
-    values_with_dates = [{'value': d['value'], 'entry_date': (d['entry_date'])} for d in data]
+    values_with_dates = []
+
+    for _ in range(max_entries - len(data)):
+        values_with_dates.append({'value': 0, 'entry_date': datetime.today().date()})
+
+    values_with_dates.extend([{'value': d['value'], 'entry_date': (d['entry_date'])} for d in data])
+    
     rolling_average = calc_12_months_rolling_average(spi_name, get_spi_by_id(spi_id)['mode'], get_spi_by_id(spi_id)['table'])
     ytd_average = calc_ytd_average(values_with_dates, get_spi_by_id(spi_id)['mode'])
     ytd_sum = calc_prev_year_sum(spi_name, values_with_dates, get_spi_by_id(spi_id)['table'])

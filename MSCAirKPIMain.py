@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 from src.routes import module3_routes, module1_OCC_routes
 from src.utils.db import get_db_connection
 from src.utils.time_utils import minutes_to_hhmm
+from src.utils.table import fill_max
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey")  # Add a secure key here in production
@@ -15,6 +16,7 @@ app.register_blueprint(module3_routes.module3_bp)
 app.register_blueprint(module1_OCC_routes.module1_OCC_)
 
 app.jinja_env.filters['minutes_to_hhmm'] = minutes_to_hhmm
+app.jinja_env.filters['fill_max'] = fill_max
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 USERNAME = os.environ.get("APP_USERNAME", "testuser")
