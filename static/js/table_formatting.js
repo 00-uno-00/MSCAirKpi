@@ -1,9 +1,6 @@
-//need table
-//need targets for each entry type
-// Get a cookie value by name
 document.addEventListener('DOMContentLoaded', function () {
-    const cookiesNames = getCookies();
-    formatTable();
+    formatEntries();
+    formatYearFinals();
 });
 
 // scale from rgba(0, 255, 0, 0.4) to rgba(255, 0, 0, 0.4)
@@ -42,24 +39,25 @@ function colorGreater(value, target, equal = false) {
             return 'rgba(255, 128, 0, 0.4)'; // not equal to target
         }
     } else {
-        colorlist = ['rgba(0, 255, 0, 0.4)', 'rgba(255, 255, 0, 0.4)', 'rgba(255, 128, 0, 0.4)', 'rgba(255, 0, 0, 0.4)'];
+        colorlist = ['rgba(0, 255, 0, 0.4)','rgba(255, 255, 0, 0.4)','rgba(255, 128, 0, 0.4)','rgba(255, 0, 0, 0.4)'];
         for (let i = 0; i < target.length; i++) {
             if (value > target[i]) {
                 return colorlist[i];
             }
         }
+        return 'rgba(255, 0, 0, 0.4)'; // if no condition met, return red
     }
 }
 
 // format the table
-function formatTable() {
+function formatEntries() {
     const table = document.getElementById('myTable');
     const rows = table.getElementsByTagName('tr');
     const cookiesNames = getCookies();
     for (let i = 1; i < rows.length; i++) { // skip header row
         const cells = rows[i].getElementsByTagName('td');
         if (cells.length > 0) {
-            let targetCell = cells[cells.length - 2]; // last cell is the target
+            let targetCell = cells[cells.length - 2]; //the second last cell = target
             targetValue = targetCell.textContent;
             sign = targetValue.slice(0, 1); // get the sign
             targetValue = targetValue.slice(1); // remove the sign
@@ -71,15 +69,15 @@ function formatTable() {
                 targetValue = parseFloat(targetValue);
             }
             let descriptionCell = cells[0];
-            if (cookiesNames.some(obj => obj.spi_name === descriptionCell.textContent)) {
-                retrievedValue = eatCookie(descriptionCell.textContent);
+            if (cookiesNames.some(obj => obj.id === parseInt(rows[i].attributes.name.textContent))) {
+                retrievedValue = eatCookie(`id_${rows[i].attributes.name.textContent}`);
                 if (retrievedValue) {
                     retrievedValue = retrievedValue.replace(/\\054/g, ',');
-                    retrievedValue = retrievedValue.slice(2, -2);
+                    retrievedValue = retrievedValue.slice(1, -1);
                     targetValue = retrievedValue.split(',').map(Number);
                 }
             }
-            for (let j = 1; j < cells.length - 2; j++) { // skip last cell & skip description cell
+            for (let j = 1; j < cells.length - 5; j++) { // color only monthly entries
                 const valueCell = cells[j];
                 let value = valueCell.textContent;
                 if (value === '-') {
@@ -101,8 +99,6 @@ function formatTable() {
                             break;
                         case '<':
                             if (cookiesNames && retrievedValue) {
-
-
                                 valueCell.style.backgroundColor = colorLess(value, targetValue);
                             } else {
                                 valueCell.style.backgroundColor = colorLess(value, targetValue);
@@ -116,6 +112,59 @@ function formatTable() {
 
         }
     }
+}
+
+function formatYearFinals() {
+    const table = document.getElementById('myTable');
+    const rows = table.getElementsByTagName('tr');
+    const cookiesNames = getCookies();
+    for (let i = 1; i < rows.length; i++) { // skip header row
+       const cells = rows[i].getElementsByTagName('td');
+       if (cells.length > 0) {
+            let targetCell = cells[cells.length - 2]; //the second last cell = target
+            targetValue = targetCell.textContent;
+            sign = targetValue.slice(0, 1); // get the sign
+            targetValue = targetValue.slice(1); // remove the sign
+            try {
+                targetValue = parseFloat(targetValue);
+            } catch (error) {
+                console.error('Error parsing target value:', error);
+                targetValue = targetValue.slice(0, -1); // remove '%' if present
+                targetValue = parseFloat(targetValue);
+            }
+            
+            for (let j = cells.length - 5; j < cells.length - 2; j++) { // color only monthly entries
+                const valueCell = cells[j];
+                let value = valueCell.textContent;
+                if (value === '-') {
+                    value = 0; // treat '-' as 0
+                }
+                value = parseFloat(value);
+
+                // Set background color based on the target
+                if (!isNaN(value) && targetValue !== null) {//frontend made me lose my hair
+                    switch (sign) {
+                        case '≥':
+                            valueCell.style.backgroundColor = colorGreater(value, targetValue, true);
+                            break;
+                        case '≤':
+                            valueCell.style.backgroundColor = colorLess(value, targetValue, true);
+                            break;
+                        case '>':
+                            valueCell.style.backgroundColor = colorGreater(value, targetValue);
+                            break;
+                        case '<':
+                            valueCell.style.backgroundColor = colorLess(value, targetValue);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+        }
+    }
+
 }
 
 function getCookies() {

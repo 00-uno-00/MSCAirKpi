@@ -1,11 +1,10 @@
-from flask import Blueprint,render_template, request, session
+from flask import Blueprint,render_template, request, session, make_response
 import src.utils.spis as spi_utils
 import src.utils.db as db_utils
 import src.utils.table as table_utils
 from src.utils.graphs import interactive_plot
 from datetime import datetime
 import pandas as pd
-from flask import make_response
 import json
 
 module3_bp = Blueprint('module3', __name__)
@@ -16,14 +15,14 @@ graph_map ={
 }
 
 spis = [
-    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": {2}, "mode": "sum", "sign": "tozeroy" },
-    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": {95}, "mode": "avg", "sign": "tozeroy" },
-    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed", "target_value": {1}, "mode": "sum", "sign": "tozeroy" },
-    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives", "target_value": {1}, "mode": "sum", "sign": "tozeroy" },
-    { "id": 5, "spi_name": "Nr of Accident", "target_value": {1}, "mode": "sum", "sign": "tozeroy" },
-    { "id": 6, "spi_name": "Nr of Serious Incident", "target_value": {1}, "mode": "avg", "sign": "toinfy" },
-    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)", "target_value": {1, 1.7, 2.4, 3.1}, "mode": "avg", "sign": "toinfy" },
-    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)", "target_value": {1, 2.7, 3.4, 4.1}, "mode": "avg", "sign": "toinfy" },
+    { "id": 1, "spi_name": "Nr. of Safety Review Board perfomed", "target_value": 2, "mode": "sum", "sign": "tozeroy" },
+    { "id": 2, "spi_name": "% of Recommendations implemented (YTD)", "target_value": 95, "mode": "avg", "sign": "tozeroy" },
+    { "id": 3, "spi_name": "Nr. of Emergency Response (ERP) drill performed", "target_value": 1, "mode": "sum", "sign": "tozeroy" },
+    { "id": 4, "spi_name": "Nr. of review of Safety Policy & Objectives", "target_value": 1, "mode": "sum", "sign": "tozeroy" },
+    { "id": 5, "spi_name": "Nr of Accident", "target_value": 1, "mode": "sum", "sign": "tozeroy" },
+    { "id": 6, "spi_name": "Nr of Serious Incident", "target_value": 1, "mode": "avg", "sign": "toinfy" },
+    { "id": 7, "spi_name": "Nr of Operational Incidents (MOR)", "target_value": [1, 1.7, 2.4, 3.1], "mode": "avg", "sign": "toinfy" },
+    { "id": 8, "spi_name": "Nr of Technical Incidents (MOR)", "target_value": [1, 2.7, 3.4, 4.1], "mode": "avg", "sign": "toinfy" },
    ]
 """
     { "id": 9, "spi_name": "Nr of Safety Reports (Voluntary & confidential) per month", "target_value": "≤2 per 1000FHs", "mode": "avg" },
@@ -58,9 +57,9 @@ spis = [
 ]"""
 
 graphs_spis = [ ### Note all the SPIs need to be in the spis list to be displayed in the graphs
-    {"spi_name": "Nr. of Safety Review Board perfomed" },
-    {"spi_name": "% of Recommendations implemented (YTD)" },
-    {"spi_name": "Nr of Operational Incidents (MOR)"}
+    {"id": 1, "table_name": "Nr. of Safety Review Board perfomed", "target_value": 2},
+    {"id": 2, "table_name": "% of Recommendations implemented (YTD)", "target_value": 95},
+    {"id": 7, "table_name": "Nr of Operational Incidents (MOR)", "target_value": [1, 1.7, 2.4, 3.1]}
 ]
 
 ###
@@ -85,7 +84,7 @@ def module_3():#!!!!ID USATO PER CLASSE DI SPI SOLO LOCALMENTE !!!!
         # Retrieve data from the database for each SPI
         data = db_utils.get_data_spi(spi_name, start_date=datetime.today().replace(month=1, day=1), end_date=datetime.today(), cur=cur, table='safety_data')
         target_value = spi.get('target_value', None)
-        if isinstance(target_value, set):
+        if isinstance(target_value, list):
             target_value = sorted(target_value)[0] if target_value else None #needs to set the base target 
         all_data.append({
             'id': spi['id'],
@@ -109,9 +108,9 @@ def module_3():#!!!!ID USATO PER CLASSE DI SPI SOLO LOCALMENTE !!!!
     resp.set_cookie('spis', json.dumps(graphs_spis))  # Store the SPIs in a cookie for later use
 
     for spi in graphs_spis:
-        target_value = spi_utils.get_spi_by_name(spi['spi_name'])['target_value']
+        target_value = spi['target_value']
         if isinstance(target_value, list) and len(target_value) > 1:
-            resp.set_cookie(spi['spi_name'], str(spi_utils.get_spi_by_name(spi['spi_name'])['target_value']))
+            resp.set_cookie(f"id_{spi['id']}", str(target_value))
 
     user_agent=request.headers.get('User-Agent')
 
@@ -155,19 +154,13 @@ def module_3_graphs():
     graphs = ""
     for processed_spi in processed_data:
         # values are string by default messing up the graphs
-        if processed_spi['spi_name'] in [spi['spi_name'] for spi in graphs_spis]:
-            for entry in processed_spi['data']:
-                if isinstance(entry['value'], str):
-                    entry['value'] = float(entry['value']) if entry['value'] else 0.0
+        for spi in graphs_spis:
+            if processed_spi['spi_name'] in [spi['table_name']]:
+                for entry in processed_spi['data']:
+                    if isinstance(entry['value'], str):
+                        entry['value'] = float(entry['value']) if entry['value'] else 0.0
 
-            processed_spi = {#TODO useful?
-                'id': processed_spi['id'],
-                'spi_name': processed_spi['spi_name'],
-                'data': processed_spi['data'],
-                'target_value': processed_spi['target_value'],
-                'sign': processed_spi['sign']
-            }
-            graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi['data']), processed_spi['spi_name'], processed_spi['target_value'], processed_spi['sign'])}</div>'
+                graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi['data']), spi['table_name'], spi['target_value'], processed_spi['sign'])}</div>'
     
     return graphs
 
@@ -233,4 +226,4 @@ def module_3_table():
     cur.close()
     db_utils.get_db_connection().close()
 
-    return table_utils.get_table(all_data, graph_map)
+    return table_utils.get_table(all_data, graph_map, 'safety_table.html')

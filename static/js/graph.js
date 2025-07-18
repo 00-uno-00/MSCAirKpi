@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeBtn = document.getElementById('closeBtn');
     const graphContainer = document.getElementById('graph-container');
     const sticky = document.getElementsByClassName('sticky-col');
+    const moduleNumber = document.baseURI.split('/')[4]; 
     if (!window.openBtnListenerAttached) {
         openBtn.onclick = async () => {
             for (let i = 0; i < sticky.length; i++) {
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
             graphContainer.innerHTML = 'Loading...';
 
             try {
-                const res = await fetch('/module/3/graphs');
+                const res = await fetch(`/module/${moduleNumber}/graphs`);
                 if (!res.ok) throw new Error('Network response was not ok');
                 const html = await res.text();
                 // Clear container and create iframe

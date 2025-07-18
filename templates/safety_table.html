@@ -10,7 +10,7 @@
             <th>{{ value.entry_date }}</th>
             {% endfor %}
             <th class="sticky-col">Rolling 12-months Aver./Sum(as applicable)</th>
-            <th class="sticky-col">YTD Aver./Sum (as applicable)</th>
+            <th class="sticky-col">YTD Aver./Sum (as applicable) 2025</th>
             <th>Year End 2024</th>
             <th>TARGET&nbsp;(12 months of operations)</th>
             <th>{{ this_month }}</th>
@@ -18,7 +18,7 @@
     </thead>
     <tbody>
         {% for row in rows %}
-        <tr name="id_{{ row.id }}">
+        <tr name="{{ row.id }}">
             <td class="sticky-col">{{ row.spi_name }}</td>
             {% for value in row['data']['values']%}
             {% if row.id == 2 %}

@@ -24,7 +24,7 @@
         {% endif %}
         <div class="row text-decoration-none d-flex overflow-auto justify-content-center">
             <div class="col ms-0" style="padding: 2%;">
-                <form action="/module/3" id="date_form">
+                <form action="/module/1" id="date_form">
                     <div class="row mb-3" style="padding: 1%;">
                         <div class="col d-flex justify-content-left">
                             <label class="me-2 align-self-center" style="font-weight: bold;">Start Date:</label>
@@ -46,7 +46,7 @@
                         </div>
                     </div>
                 </form>
-                <form action="/module/3" method="POST" id="data_form">
+                <form action="/module/1" method="POST" id="data_form">
                     <div class="table-responsive" id="main-table">
                         {{ table|safe }}
                     </div>
@@ -98,6 +98,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', filename='js/occ.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/graph.js') }}"></script>
     <!---->
 </body>
 

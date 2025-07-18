@@ -1,4 +1,4 @@
-from flask import Blueprint,render_template, request, session
+from flask import Blueprint,render_template, request, session, make_response
 import src.utils.spis as spi_utils
 import src.utils.db as db_utils
 import src.utils.table as table_utils
@@ -6,8 +6,10 @@ import src.utils.time_utils as time
 from src.utils.graphs import interactive_plot
 from datetime import datetime
 import calendar
+import json
 ### DATA ANALYSIS
 import plotly.graph_objects as go
+import pandas as pd
 
 module1_OCC_ = Blueprint('module1_OCC_', __name__)
 SPIS = [
@@ -16,12 +18,21 @@ SPIS = [
     { "id": 40, "spi_name": "Flight hours per cycle --", "target_value": 8, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 41, "spi_name": "Regularity --", "target_value": 95, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 42, "spi_name": "Departure Punctuality --","target_value": 75, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
-    { "id": 43, "spi_name": "Aircraft daily utilization per month --", "target_value": 475, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"}
+    { "id": 43, "spi_name": "Aircraft daily utilization per month --", "target_value": 12, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"}
 ]
 
 graph_map ={ 
     "tozeroy": "≥"
 }
+
+graphs_spis = [#uso id per corrispondneza anche se presente nome A/C mentre nome grafico custom, mantengo target indipendneti per table e grafico 
+    {"id":38,"table_name": "Flight time - block hours", "target_value": 5000/12},
+    {"id":39,"table_name": "Flight cycles", "target_value": 475/12},
+    {"id":40,"table_name": "Flight hours per cycle", "target_value": [11, 10.50]},
+    {"id":41,"table_name": "Regularity ", "target_value": 95},
+    {"id":42,"table_name": "Departure Punctuality", "target_value": 75},
+    {"id":43,"table_name": "Aircraft daily utilization per month", "target_value": 12}
+]
 
 @module1_OCC_.route('/module/1', methods=['GET', 'POST'])
 def module_1_OCC():
@@ -41,7 +52,6 @@ def module_1_OCC():
         start_date = request.args.get('start_date', datetime.today().replace(month=1, day=1))
         end_date = request.args.get('end_date', datetime.today())
     
-
     all_data = db_utils.get_data_table('occ_flight_data', start_date=start_date, end_date=end_date, cur=cur)
     
     if not all_data:
@@ -58,16 +68,54 @@ def module_1_OCC():
             if spi['spi_name'][start_index:end_index] not in aircafts:
                 aircafts.append(spi['spi_name'][start_index:end_index])
 
-    #auto_vals = auto_values()
-
     table=table_utils.get_table(all_data, graph_map, 'occ_table.html')
 
-    return render_template('OCC.html', table=table, all_data=all_data, start_date_value=datetime.today().replace(month=1, day=1).strftime('%Y-%m-%d'), end_date_value=datetime.today().strftime('%Y-%m-%d'), aircrafts=aircafts)
+    resp = make_response()
+
+    resp.set_cookie('spis', json.dumps(graphs_spis))  # Cookies are used for conditional formatting in the table
+
+    for spi in graphs_spis:
+        target_value = spi['target_value']
+        if isinstance(target_value, list):
+            resp.set_cookie(f"id_{spi['id']}", str(target_value))
+
+    resp.set_data(render_template('OCC.html', table=table, all_data=all_data, start_date_value=datetime.today().replace(month=1, day=1).strftime('%Y-%m-%d'), end_date_value=datetime.today().strftime('%Y-%m-%d'), aircrafts=aircafts))
+    
+    return resp 
 
 @module1_OCC_.route('/module/1/graphs')
 def module_1_OCC_graphs():
     """Route for generating graphs for the OCC module.
     """
+
+    processed_data = session.get('all_data', [])
+    # convert the date from cookie to datetime
+    if not processed_data:
+        return "No data available", 404
+    for spi in processed_data:
+        for entry in spi['data']:
+            if isinstance(entry['entry_date'], str):
+                entry['entry_date'] = datetime.strptime(entry['entry_date'], '%a, %d %b %Y %H:%M:%S %Z')
+
+
+    graphs = ""
+    for processed_spi in processed_data:
+        # values are string by default messing up the graphs
+        for graph_spi in graphs_spis:
+            if processed_spi['spi_name'].__contains__(f"{graph_spi['table_name'].split(' ')[0]} {graph_spi['table_name'].split(' ')[1] if graph_spi['table_name'].split(' ')[1] else ''}"):
+                for entry in processed_spi['data']:
+                    if isinstance(entry['value'], str):
+                        entry['value'] = float(entry['value']) if entry['value'] else 0.0
+
+                # convert minutes into hrs(float) for the graph
+                if processed_spi['spi_name'].__contains__("hours") or processed_spi['spi_name'].__contains__("month"):
+                    for entry in processed_spi['data']:
+                        if isinstance(entry['value'], float) or isinstance(entry['value'], int):
+                            entry['value'] = round(entry['value'] / 60, 2)
+
+                graphs += f'<div class="graph-item">{interactive_plot(pd.DataFrame(processed_spi['data']), graph_spi['table_name'], graph_spi['target_value'], processed_spi['sign'])}</div>'
+    
+    return graphs
 
 def auto_values(flight_cycles_data, flight_time_data):
     """

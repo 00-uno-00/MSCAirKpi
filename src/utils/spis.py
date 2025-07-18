@@ -45,7 +45,7 @@ spis = [
     { "id": 40, "spi_name": "Flight hours per cycle --", "target_value": 8, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 41, "spi_name": "Regularity --", "target_value": 95, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
     { "id": 42, "spi_name": "Departure Punctuality --","target_value": 75, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
-    { "id": 43, "spi_name": "Aircraft daily utilization per month --", "target_value": 475, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
+    { "id": 43, "spi_name": "Aircraft daily utilization per month --", "target_value": 12, "mode": "avg", "table": "occ_flight_data", "sign": "tozeroy"},
 ]
 
 def get_spi_by_id(spi_id):

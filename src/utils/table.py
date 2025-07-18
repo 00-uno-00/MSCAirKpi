@@ -21,6 +21,9 @@ def get_table(all_data, graph_map, table):#this should not be exposed
 
     for spi in all_data:
         spi_values = spi['data']
+        target_value = spi['target_value']
+        if isinstance(target_value, list):
+            target_value = sorted(target_value)[0] if target_value else None
         processed_spi = {
             'id': spi['id'],
             'spi_name': spi['spi_name'],
